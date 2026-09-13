@@ -24,7 +24,75 @@
 <body>
   <main id="app">
     <h1>Assinaturas</h1>
-    <p id="status-conexao">Verificando conexão...</p>
+
+    <!-- Mensagens gerais, como "enviamos um link para o seu e-mail" -->
+    <p id="aviso" role="status" hidden></p>
+
+    <!-- Visível até o app descobrir se existe sessão, para nunca ficar em branco -->
+    <p id="tela-carregando">Carregando...</p>
+
+    <!-- Todos os formulários usam method="post". O JavaScript cuida do envio,
+         mas, se ele falhar, isso impede que e-mail e senha apareçam no
+         endereço da página e fiquem gravados no histórico do navegador. -->
+
+    <section id="tela-entrar" hidden>
+      <h2>Entrar</h2>
+      <form id="form-entrar" method="post">
+        <label>E-mail
+          <input type="email" name="email" autocomplete="email" required>
+        </label>
+        <label>Senha
+          <input type="password" name="senha" autocomplete="current-password" required>
+        </label>
+        <p class="erro" role="alert"></p>
+        <button type="submit">Entrar</button>
+      </form>
+      <button type="button" data-ir-para="criarConta">Não tenho conta</button>
+      <button type="button" data-ir-para="pedirNovaSenha">Esqueci a senha</button>
+    </section>
+
+    <section id="tela-criar-conta" hidden>
+      <h2>Criar conta</h2>
+      <form id="form-criar-conta" method="post">
+        <label>E-mail
+          <input type="email" name="email" autocomplete="email" required>
+        </label>
+        <label>Senha (mínimo de 8 caracteres)
+          <input type="password" name="senha" autocomplete="new-password" minlength="8" required>
+        </label>
+        <p class="erro" role="alert"></p>
+        <button type="submit">Criar conta</button>
+      </form>
+      <button type="button" data-ir-para="entrar">Já tenho conta</button>
+    </section>
+
+    <section id="tela-pedir-nova-senha" hidden>
+      <h2>Esqueci a senha</h2>
+      <form id="form-pedir-nova-senha" method="post">
+        <label>E-mail da conta
+          <input type="email" name="email" autocomplete="email" required>
+        </label>
+        <p class="erro" role="alert"></p>
+        <button type="submit">Enviar link para criar nova senha</button>
+      </form>
+      <button type="button" data-ir-para="entrar">Voltar</button>
+    </section>
+
+    <section id="tela-nova-senha" hidden>
+      <h2>Criar nova senha</h2>
+      <form id="form-nova-senha" method="post">
+        <label>Nova senha (mínimo de 8 caracteres)
+          <input type="password" name="senha" autocomplete="new-password" minlength="8" required>
+        </label>
+        <p class="erro" role="alert"></p>
+        <button type="submit">Salvar nova senha</button>
+      </form>
+    </section>
+
+    <section id="tela-inicio" hidden>
+      <p>Você entrou como <strong id="email-usuario"></strong>.</p>
+      <button type="button" id="botao-sair">Sair</button>
+    </section>
   </main>
 
   <!-- Biblioteca do Supabase, versão fixada. O "integrity" é a impressão digital
