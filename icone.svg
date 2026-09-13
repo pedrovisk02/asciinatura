@@ -1,5 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="16" fill="#2b4239"/>
-  <circle cx="44" cy="40" r="18" fill="#afafaf"/>
-  <rect x="10" y="12" width="22" height="8" rx="4" fill="#ededed"/>
+  <!-- Logo do projeto, "Cartaz invertido": o cartaz do total da tela inicial,
+       com fundo verde, círculo cinza cortado na borda e a etiqueta clara. -->
+  <defs>
+    <clipPath id="recorte">
+      <rect width="64" height="64" rx="16"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#recorte)">
+    <rect width="64" height="64" fill="#2b4239"/>
+    <circle cx="46" cy="44" r="26" fill="#afafaf"/>
+    <rect x="8" y="10" width="24" height="9" rx="4.5" fill="#ededed"/>
+  </g>
 </svg>

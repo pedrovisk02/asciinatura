@@ -7,6 +7,9 @@ try {
 } catch (falha) {
   console.error(falha);
 
+  // A abertura sai na hora, para a explicação logo abaixo aparecer.
+  document.querySelector('#abertura')?.setAttribute('hidden', '');
+
   const telaCarregando = document.querySelector('#tela-carregando');
   telaCarregando.textContent =
     'Não foi possível abrir o app. Confira a conexão com a internet e tente de novo.';

@@ -13,6 +13,10 @@ import { listarAssinaturas, criarAssinatura, atualizarAssinatura, apagarAssinatu
 import { resumoDoInicio, dataDeHoje, dataParaGravarNaEdicao } from './calculos.js';
 import { validarAssinatura, valorParaOCampo } from './validacao.js';
 import { mensagemDeErro, ehFalhaDeConexao, MENSAGEM_SEM_CONEXAO } from './erros.js';
+import { fecharAbertura } from './abertura.js';
+import { animarManchas, animarCirculo, reduzirMovimento } from './ascii.js';
+import { confirmarApagar } from './confirmacao.js';
+import { decifrarTextos, ligarInteracoes } from './interacoes.js';
 
 const telas = {
   carregando: document.querySelector('#tela-carregando'),
@@ -30,10 +34,25 @@ const aviso = document.querySelector('#aviso');
 // a senha nova. Nesse meio tempo ela já tem sessão, mas não deve ir para o início.
 let definindoNovaSenha = false;
 
-function mostrarTela(nome) {
+// Com "animar", a tela entra com o efeito de decodificação. A tela inicial
+// tem a própria entrada (tocarEntrada), que espera a lista carregar.
+function mostrarTela(nome, { animar = true } = {}) {
   for (const [chave, tela] of Object.entries(telas)) {
     tela.hidden = chave !== nome;
   }
+  if (animar && nome !== 'inicio' && nome !== 'carregando') {
+    animarEntradaDaTela(telas[nome]);
+  }
+}
+
+// Os blocos da tela aparecem em sequência e os textos se decifram.
+function animarEntradaDaTela(elemento) {
+  if (reduzirMovimento()) return;
+  elemento.classList.remove('entrando');
+  void elemento.offsetWidth; // força o navegador a reiniciar a animação
+  elemento.classList.add('entrando');
+  decifrarTextos(elemento);
+  setTimeout(() => elemento.classList.remove('entrando'), 1200);
 }
 
 function mostrarAviso(texto) {
@@ -43,10 +62,20 @@ function mostrarAviso(texto) {
   aviso.hidden = !texto;
 }
 
-function mostrarInicio(email) {
+const anuncio = document.querySelector('#anuncio');
+
+// Conta a leitores de tela o que acabou de mudar.
+function anunciar(texto) {
+  anuncio.textContent = texto;
+}
+
+async function mostrarInicio(email) {
   document.querySelector('#email-usuario').textContent = email;
   mostrarTela('inicio');
-  carregarInicio();
+  await carregarInicio();
+  // Com a lista pronta, a abertura sai e os blocos entram em sequência.
+  await fecharAbertura();
+  tocarEntrada();
 }
 
 // Trava o botão enquanto a ação espera resposta, para um clique duplo não
@@ -72,6 +101,7 @@ const formatoReais = new Intl.NumberFormat('pt-BR', { style: 'currency', currenc
 const formatoNumero = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const estadoInicio = document.querySelector('#estado-inicio');
+const esqueletoInicio = document.querySelector('#esqueleto-inicio');
 const destaqueChegando = document.querySelector('#destaque-chegando');
 const botaoTentarDeNovo = document.querySelector('#botao-tentar-de-novo');
 const inicioVazio = document.querySelector('#inicio-vazio');
@@ -86,7 +116,13 @@ const listas = {
 };
 
 const PERIODO_DO_CICLO = { mensal: 'por mês', trimestral: 'por trimestre', anual: 'por ano' };
-const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+// Primeira letra maiúscula, para textos montados a partir de partes (como a
+// categoria que a pessoa digitou em minúsculas) começarem sempre em maiúscula.
+function comPrimeiraMaiuscula(texto) {
+  return texto.charAt(0).toLocaleUpperCase('pt-BR') + texto.slice(1);
+}
 
 // "# set 2026" no topo, como as etiquetas de cor da referência visual.
 const [anoAtual, mesAtual] = dataDeHoje().split('-');
@@ -110,9 +146,9 @@ function formatarDataCompleta(texto) {
 }
 
 function quandoCobra(dias) {
-  if (dias === 0) return 'hoje';
-  if (dias === 1) return 'amanhã';
-  return `em ${dias} dias`;
+  if (dias === 0) return 'Hoje';
+  if (dias === 1) return 'Amanhã';
+  return `Em ${dias} dias`;
 }
 
 // Cria um elemento com classe e conteúdo. O conteúdo entra sempre como texto,
@@ -137,6 +173,8 @@ function criarLinha(assinatura, { detalhe = '', valor = null, botoes = [] } = {}
   if (detalhe) texto.append(criar('span', 'linha-detalhe', detalhe));
 
   const linha = criar('li', 'linha', texto);
+  // Para achar a linha depois de salvar e acendê-la (ver destacarLinha).
+  linha.dataset.id = assinatura.id;
   if (valor) linha.append(valor);
 
   if (botoes.length > 0) {
@@ -158,13 +196,13 @@ function criarLinha(assinatura, { detalhe = '', valor = null, botoes = [] } = {}
 // da referência). A primeira cobrança vem em verde; a segunda, em branco.
 function criarCobrancaEmDestaque(assinatura, principal) {
   const dias = assinatura.diasAteCobranca;
-  const numero = dias === 0 ? 'hoje' : String(dias).padStart(2, '0');
-  const legenda = dias === 0 ? 'cobrança' : dias === 1 ? 'dia · amanhã' : 'dias';
+  const numero = dias === 0 ? 'Hoje' : String(dias).padStart(2, '0');
+  const legenda = dias === 0 ? 'Cobrança' : dias === 1 ? 'Dia · amanhã' : 'Dias';
 
   return criar(
     'article',
     `painel cobranca ${principal ? 'painel-verde cobranca-principal' : 'painel-branco'}`,
-    criar('p', 'cobranca-rotulo', principal ? 'próxima cobrança' : 'depois'),
+    criar('p', 'cobranca-rotulo', principal ? 'Próxima cobrança' : 'Depois'),
     criar('p', dias === 0 ? 'cobranca-dias cobranca-dias-palavra' : 'cobranca-dias', numero),
     criar(
       'p',
@@ -184,18 +222,79 @@ function criarCobrancaEmDestaque(assinatura, principal) {
 const LARGURA_DO_ALGARISMO = 0.66;
 const LARGURA_DO_SEPARADOR = 0.24;
 
+function larguraEmLetras(texto) {
+  const algarismos = texto.replace(/\D/g, '').length;
+  return algarismos * LARGURA_DO_ALGARISMO + (texto.length - algarismos) * LARGURA_DO_SEPARADOR;
+}
+
+// O número que está no cartaz agora, para a próxima contagem partir dele.
+let totalNaTela = null;
+let contagemDoTotal = 0;
+
 // Mostra o total e informa ao CSS quanto ele ocupa, para a letra diminuir
 // quando o número for longo (ver .numero-total no estilo.css).
-function mostrarTotal(texto) {
+// Com "contarDe", o número conta até o valor novo em vez de trocar de uma vez.
+function mostrarTotal(valor, contarDe = null) {
   const numeroTotal = document.querySelector('#total-mensal');
-  const algarismos = texto.replace(/\D/g, '').length;
-  const separadores = texto.length - algarismos;
+  const textoFinal = formatoNumero.format(valor);
+  cancelAnimationFrame(contagemDoTotal);
+  totalNaTela = valor;
 
-  numeroTotal.textContent = texto;
-  numeroTotal.style.setProperty(
-    '--largura-do-total',
-    algarismos * LARGURA_DO_ALGARISMO + separadores * LARGURA_DO_SEPARADOR,
-  );
+  // Durante a contagem o texto muda de tamanho: reserva espaço para o maior
+  // dos dois, para o número nunca sair do bloco no meio do caminho.
+  const textoInicial = contarDe === null ? textoFinal : formatoNumero.format(contarDe);
+  numeroTotal.style.setProperty('--largura-do-total', Math.max(larguraEmLetras(textoFinal), larguraEmLetras(textoInicial)));
+
+  if (contarDe === null || contarDe === valor || reduzirMovimento()) {
+    numeroTotal.textContent = textoFinal;
+    return;
+  }
+
+  const inicio = performance.now();
+  const passo = (agora) => {
+    const p = Math.min(1, (agora - inicio) / 900);
+    const suave = 1 - (1 - p) ** 3;
+    numeroTotal.textContent = formatoNumero.format(contarDe + (valor - contarDe) * suave);
+    if (p < 1) contagemDoTotal = requestAnimationFrame(passo);
+  };
+  contagemDoTotal = requestAnimationFrame(passo);
+}
+
+// Entrada da tela inicial: os blocos aparecem em sequência e os textos e
+// números se decifram. Só quando a tela aparece, não a cada clique.
+function tocarEntrada() {
+  if (telas.inicio.hidden || inicioConteudo.hidden) return;
+  animarEntradaDaTela(inicioConteudo);
+}
+
+// Depois de salvar, a própria linha avisa: acende e ganha um selo ("nova",
+// "editada", "reativada" ou "cancelada") que some sozinho.
+const FRASE_DO_SELO = {
+  nova: (nome) => `"${nome}" foi salva.`,
+  editada: (nome) => `Alterações em "${nome}" salvas.`,
+  reativada: (nome) => `"${nome}" foi reativada e voltou a contar no total.`,
+  cancelada: (nome) => `"${nome}" foi cancelada e saiu do total.`,
+};
+
+function destacarLinha({ id, nome, selo }) {
+  anunciar(FRASE_DO_SELO[selo](nome));
+
+  const lista = selo === 'cancelada' ? listas.canceladas : listas.ativas;
+  const linha = [...lista.children].find((item) => item.dataset.id === String(id));
+  if (!linha) return;
+
+  // A cancelada vai para "Ver canceladas": abre o bloco para ela aparecer.
+  if (selo === 'cancelada') blocoCanceladas.open = true;
+
+  const marca = criar('span', 'selo', comPrimeiraMaiuscula(selo));
+  linha.querySelector('.linha-nome').append(marca);
+  linha.classList.add('destacada');
+  linha.scrollIntoView({ block: 'nearest', behavior: reduzirMovimento() ? 'auto' : 'smooth' });
+
+  setTimeout(() => {
+    linha.classList.remove('destacada');
+    marca.remove();
+  }, 3000);
 }
 
 function mostrarChegando(chegando) {
@@ -218,7 +317,10 @@ function mostrarChegando(chegando) {
 
 function limparInicio() {
   numeroDaCarga++;
+  cancelAnimationFrame(contagemDoTotal);
+  totalNaTela = null;
   estadoInicio.textContent = '';
+  esqueletoInicio.hidden = true;
   botaoTentarDeNovo.hidden = true;
   inicioVazio.hidden = true;
   inicioConteudo.hidden = true;
@@ -230,23 +332,31 @@ function limparInicio() {
   }
 }
 
-async function carregarInicio() {
+// "destaque": a assinatura que acabou de ser salva, para a linha acender.
+// "contar": o total conta do valor antigo até o novo (depois de salvar ou apagar).
+async function carregarInicio({ destaque = null, contar = false } = {}) {
   const estaCarga = ++numeroDaCarga;
-  estadoInicio.textContent = 'Carregando...';
+  const jaHaviaAlgoNaTela = !inicioConteudo.hidden || !inicioVazio.hidden;
+  estadoInicio.textContent = '';
   botaoTentarDeNovo.hidden = true;
+  // Sem nada na tela, os blocos piscando mostram o formato do que vem. Se já
+  // havia algo (voltando depois de salvar), fica o que estava, sem piscar.
+  esqueletoInicio.hidden = jaHaviaAlgoNaTela;
 
   try {
     const assinaturas = await listarAssinaturas();
     if (estaCarga !== numeroDaCarga) return;
 
-    estadoInicio.textContent = '';
-    mostrarResumo(resumoDoInicio(assinaturas, dataDeHoje()), assinaturas.length);
+    esqueletoInicio.hidden = true;
+    const contarDe = contar ? totalNaTela : null;
+    mostrarResumo(resumoDoInicio(assinaturas, dataDeHoje()), assinaturas.length, contarDe);
+    if (destaque) destacarLinha(destaque);
   } catch (falha) {
     if (estaCarga !== numeroDaCarga) return;
     console.error(falha);
+    esqueletoInicio.hidden = true;
     // Se já havia algo na tela, ele continua visível, com a explicação e o
     // botão para tentar de novo em cima.
-    const jaHaviaAlgoNaTela = !inicioConteudo.hidden || !inicioVazio.hidden;
     const explicacao = ehFalhaDeConexao(falha) ? MENSAGEM_SEM_CONEXAO : 'Não foi possível carregar as assinaturas.';
     estadoInicio.textContent = jaHaviaAlgoNaTela
       ? `${explicacao} As informações abaixo podem estar desatualizadas.`
@@ -261,15 +371,14 @@ const botaoEditar = { texto: 'Editar', aoClicar: (assinatura) => abrirFormulario
 
 const botaoReativar = {
   texto: 'Reativar',
-  aoClicar: (assinatura, botao) =>
+  aoClicar: ({ id, nome }, botao) =>
     comBotaoTravado(botao, mostrarAviso, async () => {
-      await atualizarAssinatura(assinatura.id, { ativa: true });
-      mostrarAviso(`"${assinatura.nome}" foi reativada e voltou a contar no total.`);
-      await carregarInicio();
+      await atualizarAssinatura(id, { ativa: true });
+      await carregarInicio({ destaque: { id, nome, selo: 'reativada' }, contar: true });
     }),
 };
 
-function mostrarResumo(resumo, quantidadeTotal) {
+function mostrarResumo(resumo, quantidadeTotal, contarDe = null) {
   // Sem nenhuma assinatura (nem cancelada), a tela orienta em vez de mostrar zero.
   inicioVazio.hidden = quantidadeTotal > 0;
   inicioConteudo.hidden = quantidadeTotal === 0;
@@ -278,12 +387,12 @@ function mostrarResumo(resumo, quantidadeTotal) {
   listas.comProblema.replaceChildren(
     ...resumo.comProblema.map((assinatura) =>
       criarLinha(assinatura, {
-        detalhe: `data gravada ${formatarDataCompleta(assinatura.proxima_cobranca)}`,
+        detalhe: `Data gravada ${formatarDataCompleta(assinatura.proxima_cobranca)}`,
         botoes: [{ ...botaoEditar, texto: 'Corrigir' }],
       })),
   );
 
-  mostrarTotal(formatoNumero.format(resumo.totalMensal));
+  mostrarTotal(resumo.totalMensal, contarDe);
   document.querySelector('#quantidade-ativas').textContent =
     resumo.quantidadeAtivas === 1 ? '1 ativa' : `${resumo.quantidadeAtivas} ativas`;
 
@@ -297,7 +406,7 @@ function mostrarResumo(resumo, quantidadeTotal) {
         ? ''
         : `${formatoReais.format(assinatura.valor)} ${PERIODO_DO_CICLO[assinatura.ciclo]}`;
       return criarLinha(assinatura, {
-        detalhe: [cobrado, assinatura.categoria].filter(Boolean).join(' · '),
+        detalhe: comPrimeiraMaiuscula([cobrado, assinatura.categoria].filter(Boolean).join(' · ')),
         valor: criarValor(assinatura.valorMensal, '/mês'),
         botoes: [botaoEditar],
       });
@@ -388,14 +497,14 @@ function abrirFormulario(assinatura = null) {
   mostrarTela('formulario');
 }
 
-async function voltarAoInicio(mensagem) {
+async function voltarAoInicio(destaque = null) {
   assinaturaEmEdicao = null;
   formularioAssinatura.reset();
   mostrarTela('inicio');
-  mostrarAviso(mensagem);
+  mostrarAviso('');
   // Relê do banco em vez de só mexer na tela: assim a tela mostra o que
   // realmente ficou gravado.
-  await carregarInicio();
+  await carregarInicio({ destaque, contar: true });
 }
 
 // Liga um formulário a uma ação. Se der errado, o erro aparece dentro do
@@ -438,11 +547,12 @@ ligarFormulario('#form-assinatura', async (dados) => {
       mostrada: dataMostradaNoFormulario,
       digitada: campos.proximaCobranca,
     });
-    await atualizarAssinatura(assinaturaEmEdicao.id, campos);
-    await voltarAoInicio('Alterações salvas.');
+    const { id } = assinaturaEmEdicao;
+    await atualizarAssinatura(id, campos);
+    await voltarAoInicio({ id, nome: campos.nome, selo: 'editada' });
   } else {
-    await criarAssinatura(campos);
-    await voltarAoInicio('Assinatura salva.');
+    const nova = await criarAssinatura(campos);
+    await voltarAoInicio({ id: nova.id, nome: nova.nome, selo: 'nova' });
   }
 });
 
@@ -450,20 +560,28 @@ botaoAlternarAtiva.addEventListener('click', () =>
   comBotaoTravado(botaoAlternarAtiva, mostrarErroDoFormulario, async () => {
     const { id, nome, ativa } = assinaturaEmEdicao;
     await atualizarAssinatura(id, { ativa: !ativa });
-    await voltarAoInicio(ativa
-      ? `"${nome}" foi cancelada. Ela saiu do total e continua em "Ver canceladas".`
-      : `"${nome}" foi reativada e voltou a contar no total.`);
+    await voltarAoInicio({ id, nome, selo: ativa ? 'cancelada' : 'reativada' });
   }));
 
-botaoApagar.addEventListener('click', () =>
+botaoApagar.addEventListener('click', async () => {
+  const { id, nome, ativa } = assinaturaEmEdicao;
+  // Única ação sem volta do app, por isso a confirmação. Para uma assinatura
+  // ativa, a janela oferece também só cancelar, que é o que muitas vezes se quer.
+  const escolha = await confirmarApagar({ nome, podeCancelar: ativa });
+
+  if (escolha === 'cancelar') {
+    botaoAlternarAtiva.click();
+    return;
+  }
+  if (escolha !== 'apagar') return;
+
   comBotaoTravado(botaoApagar, mostrarErroDoFormulario, async () => {
-    const { id, nome } = assinaturaEmEdicao;
-    // Única ação sem volta do app, por isso a confirmação.
-    if (!window.confirm(`Apagar "${nome}" de vez? Isso não pode ser desfeito.`)) return;
-
     await apagarAssinatura(id);
-    await voltarAoInicio(`"${nome}" foi apagada.`);
-  }));
+    // A linha some e o total conta para baixo; o leitor de tela ouve a frase.
+    anunciar(`"${nome}" foi apagada.`);
+    await voltarAoInicio();
+  });
+});
 
 // Formulários de acesso ----------------------------------------------------------
 
@@ -539,10 +657,29 @@ if (erroDoLink) {
 // só deve trocar quando alguém entra ou sai de fato.
 let usuarioNaTela;
 
+// Animações de letras: manchas nas telas de acesso e o círculo do total.
+for (const cartaz of document.querySelectorAll('.cartaz-ascii')) {
+  const textosDoCartaz = [...cartaz.children].filter((filho) => filho.tagName !== 'CANVAS');
+  animarManchas(cartaz.querySelector('canvas'), textosDoCartaz);
+}
+const cartazTotal = document.querySelector('.cartaz-total');
+animarCirculo(cartazTotal.querySelector('canvas'), cartazTotal);
+
+// Inclinação 3D, círculo que acompanha o mouse e onda ao clicar, em todas as telas.
+ligarInteracoes();
+
+// Mostra uma tela assim que a abertura começa a sumir, com o efeito de entrada
+// nesse momento (e não escondido atrás da abertura).
+async function mostrarDepoisDaAbertura(nome) {
+  mostrarTela(nome, { animar: false });
+  await fecharAbertura();
+  if (!telas[nome].hidden) animarEntradaDaTela(telas[nome]);
+}
+
 acompanharSessao((evento, sessao) => {
   if (evento === 'PASSWORD_RECOVERY') {
     definindoNovaSenha = true;
-    mostrarTela('novaSenha');
+    mostrarDepoisDaAbertura('novaSenha');
     return;
   }
 
@@ -559,9 +696,9 @@ acompanharSessao((evento, sessao) => {
     // Só ao sair de fato: ao abrir o app sem sessão, pode haver um aviso que
     // precisa continuar visível (como o de link vencido).
     if (evento === 'SIGNED_OUT') mostrarAviso('');
-    mostrarTela('entrar');
+    mostrarDepoisDaAbertura('entrar');
   } else if (definindoNovaSenha) {
-    mostrarTela('novaSenha');
+    mostrarDepoisDaAbertura('novaSenha');
   } else {
     mostrarInicio(sessao.user.email);
   }

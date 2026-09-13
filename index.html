@@ -22,20 +22,54 @@
   <!-- Cor da barra do navegador no celular, igual ao fundo do app -->
   <meta name="theme-color" content="#ededed">
 
-  <title>Assinaturas</title>
+  <title>Asciinatura</title>
   <link rel="icon" href="icone.svg" type="image/svg+xml">
   <link rel="preload" href="fontes/montserrat-800.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fontes/jetbrains-mono-500.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/estilo.css">
 </head>
 <body>
+  <!-- Abertura: cobre a tela enquanto o app carrega (js/abertura.js). As letras
+       se juntam formando o logo no canvas. Sem JavaScript, mostra o logo parado
+       e some sozinha depois de alguns segundos (ver .abertura no estilo.css). -->
+  <div id="abertura" class="abertura" aria-hidden="true">
+    <canvas></canvas>
+    <div class="abertura-logo">
+      <svg viewBox="0 0 64 64">
+        <defs><clipPath id="recorte-logo-abertura"><rect width="64" height="64" rx="16"/></clipPath></defs>
+        <g clip-path="url(#recorte-logo-abertura)">
+          <rect width="64" height="64" fill="#afafaf"/>
+          <circle cx="46" cy="44" r="26" fill="#ededed"/>
+          <rect x="8" y="10" width="24" height="9" rx="4.5" fill="#2b4239"/>
+        </g>
+      </svg>
+    </div>
+    <!-- "pilha": o texto invisível reserva o espaço final, para as letras que
+         aparecem uma a uma não fazerem a linha pular de lugar.
+         data-comeca e data-por-letra: em que segundo cada parte começa a
+         aparecer, e quanto tempo cada letra leva. -->
+    <p class="abertura-nome marca-nome">
+      <span class="pilha marca-ascii"><span class="fantasma">Ascii</span><span data-texto data-comeca="2.0" data-por-letra="0.06">Ascii</span></span><span class="pilha"><span class="fantasma">natura</span><span data-texto data-comeca="2.3" data-por-letra="0.06">natura</span></span>
+    </p>
+    <p class="abertura-frase pilha"><span class="fantasma">Quanto custa o seu mês</span><span data-texto data-comeca="2.75" data-por-letra="0.03">Quanto custa o seu mês</span></p>
+  </div>
+
   <main id="app">
     <header class="topo">
-      <h1 class="marca">assinaturas</h1>
+      <!-- Logo: ícone + nome. "Ascii" na letra das animações, "natura" na letra do app. -->
+      <h1 class="marca">
+        <img src="icone.svg" alt="" width="26" height="26">
+        <span class="marca-nome"><span class="marca-ascii">Ascii</span>natura</span>
+      </h1>
       <span class="topo-data" id="mes-atual"></span>
     </header>
 
     <!-- Mensagens gerais, como "enviamos um link para o seu e-mail" -->
     <p id="aviso" class="aviso" role="status" hidden></p>
+
+    <!-- Invisível na tela: avisa leitores de tela do que mudou (como "Netflix
+         foi salva"), já que na tela o aviso é só a linha acendendo. -->
+    <p id="anuncio" class="so-leitor" role="status"></p>
 
     <!-- Visível até o app descobrir se existe sessão, para nunca ficar em branco -->
     <p id="tela-carregando" class="carregando">Carregando...</p>
@@ -44,9 +78,12 @@
          mas, se ele falhar, isso impede que e-mail e senha apareçam no
          endereço da página e fiquem gravados no histórico do navegador. -->
 
+    <!-- Nas telas de acesso, o cartaz é verde e tem manchas feitas de letras
+         flutuando atrás do texto (js/ascii.js). -->
     <section id="tela-entrar" class="tela tela-estreita" hidden>
-      <div class="painel painel-cinza cartaz">
-        <span class="pilula">sua conta</span>
+      <div class="painel cartaz cartaz-ascii">
+        <canvas aria-hidden="true"></canvas>
+        <span class="pilula">Sua conta</span>
         <h2 class="titulo-cartaz">Entrar</h2>
         <p class="cartaz-sub">Quanto suas assinaturas custam por mês, e o que vem por aí.</p>
       </div>
@@ -67,8 +104,9 @@
     </section>
 
     <section id="tela-criar-conta" class="tela tela-estreita" hidden>
-      <div class="painel painel-cinza cartaz">
-        <span class="pilula">nova conta</span>
+      <div class="painel cartaz cartaz-ascii">
+        <canvas aria-hidden="true"></canvas>
+        <span class="pilula">Nova conta</span>
         <h2 class="titulo-cartaz">Criar conta</h2>
       </div>
       <form id="form-criar-conta" class="painel painel-branco formulario" method="post">
@@ -87,8 +125,9 @@
     </section>
 
     <section id="tela-pedir-nova-senha" class="tela tela-estreita" hidden>
-      <div class="painel painel-cinza cartaz">
-        <span class="pilula">acesso</span>
+      <div class="painel cartaz cartaz-ascii">
+        <canvas aria-hidden="true"></canvas>
+        <span class="pilula">Acesso</span>
         <h2 class="titulo-cartaz">Esqueci a senha</h2>
       </div>
       <form id="form-pedir-nova-senha" class="painel painel-branco formulario" method="post">
@@ -104,8 +143,9 @@
     </section>
 
     <section id="tela-nova-senha" class="tela tela-estreita" hidden>
-      <div class="painel painel-cinza cartaz">
-        <span class="pilula">acesso</span>
+      <div class="painel cartaz cartaz-ascii">
+        <canvas aria-hidden="true"></canvas>
+        <span class="pilula">Acesso</span>
         <h2 class="titulo-cartaz">Nova senha</h2>
       </div>
       <form id="form-nova-senha" class="painel painel-branco formulario" method="post">
@@ -123,13 +163,25 @@
         <button type="button" id="botao-sair" class="botao-texto">Sair</button>
       </div>
 
-      <!-- "Carregando..." ou aviso de erro ao buscar as assinaturas -->
+      <!-- Aviso de erro ao buscar as assinaturas -->
       <p id="estado-inicio" class="estado" role="status"></p>
       <button type="button" id="botao-tentar-de-novo" class="botao botao-contorno" hidden>Tentar de novo</button>
 
+      <!-- Enquanto a lista carrega sem nada na tela: blocos piscando no formato
+           da tela inicial, para ela não "pular" quando os dados chegarem. -->
+      <div id="esqueleto-inicio" class="esqueleto" hidden>
+        <p class="so-leitor" role="status">Carregando assinaturas...</p>
+        <div class="esqueleto-bloco esqueleto-total"></div>
+        <div class="esqueleto-dupla">
+          <div class="esqueleto-bloco"></div>
+          <div class="esqueleto-bloco"></div>
+        </div>
+        <div class="esqueleto-bloco esqueleto-lista"></div>
+      </div>
+
       <!-- Primeira visita, sem nenhuma assinatura: orientar em vez de mostrar zero -->
       <div id="inicio-vazio" class="painel painel-cinza cartaz" hidden>
-        <span class="pilula">começando</span>
+        <span class="pilula">Começando</span>
         <h2 class="titulo-cartaz">Nenhuma assinatura por aqui ainda</h2>
         <p class="cartaz-sub">
           Cadastre as cobranças que se repetem, como streaming, academia ou
@@ -152,15 +204,17 @@
              largura toda em cima, e embaixo ficam as cobranças à esquerda e a
              lista à direita. -->
         <div class="painel painel-cinza cartaz cartaz-total">
-          <h2 class="pilula">total do mês</h2>
+          <!-- O círculo do cartaz, desenhado com algarismos e "R$" (js/ascii.js) -->
+          <canvas aria-hidden="true"></canvas>
+          <h2 class="pilula">Total do mês</h2>
           <p class="numero-total" id="total-mensal"></p>
-          <p class="legenda-total">reais por mês<br><span id="quantidade-ativas"></span></p>
+          <p class="legenda-total">Reais por mês<br><span id="quantidade-ativas"></span></p>
           <!-- Só aparece no computador; no celular o botão fica preso no pé da tela -->
-          <button type="button" class="botao botao-no-cartaz" data-acao="adicionar">+ adicionar assinatura</button>
+          <button type="button" class="botao botao-no-cartaz" data-acao="adicionar">+ Adicionar assinatura</button>
         </div>
 
         <section class="coluna" aria-labelledby="titulo-chegando">
-          <h2 id="titulo-chegando" class="rotulo">chegando · próximos 30 dias</h2>
+          <h2 id="titulo-chegando" class="rotulo">Chegando · próximos 30 dias</h2>
           <!-- As duas próximas cobranças em blocos grandes; as outras em linhas -->
           <div id="destaque-chegando" class="chegando-destaque"></div>
           <ul id="lista-chegando" class="lista lista-chegando"></ul>
@@ -169,7 +223,7 @@
 
         <div class="coluna">
           <section class="painel painel-branco" aria-labelledby="titulo-todas">
-            <h2 id="titulo-todas" class="titulo-painel">todas</h2>
+            <h2 id="titulo-todas" class="titulo-painel">Todas</h2>
             <ul id="lista-ativas" class="lista"></ul>
             <p id="ativas-vazio" hidden>Nenhuma assinatura ativa.</p>
           </section>
@@ -183,13 +237,13 @@
       </div>
 
       <div class="barra-acao">
-        <button type="button" class="botao botao-largo" data-acao="adicionar">+ adicionar assinatura</button>
+        <button type="button" class="botao botao-largo" data-acao="adicionar">+ Adicionar assinatura</button>
       </div>
     </section>
 
     <section id="tela-formulario" class="tela tela-estreita" hidden>
       <div class="painel painel-cinza cartaz">
-        <span class="pilula">assinatura</span>
+        <span class="pilula">Assinatura</span>
         <h2 id="titulo-formulario" class="titulo-cartaz">Nova assinatura</h2>
       </div>
 
@@ -242,7 +296,10 @@
       <div id="acoes-edicao" class="painel painel-verde acoes-edicao" hidden>
         <h3>Outras ações</h3>
         <button type="button" id="botao-alternar-ativa" class="botao botao-contorno">Marcar como cancelada</button>
-        <button type="button" id="botao-apagar" class="botao botao-perigo">Apagar de vez</button>
+        <button type="button" id="botao-apagar" class="botao botao-contorno botao-com-icone">
+          <svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg>
+          Apagar de vez
+        </button>
       </div>
 
       <!-- "Voltar", e não "Cancelar", para não confundir com cancelar a assinatura -->
@@ -252,10 +309,36 @@
     </section>
   </main>
 
+  <!-- Confirmação antes de apagar (js/confirmacao.js). O <dialog> do navegador
+       já prende o foco dentro da janela e fecha com a tecla Esc. -->
+  <dialog id="dialogo-apagar" class="dialogo" aria-labelledby="dialogo-apagar-titulo" aria-describedby="dialogo-apagar-texto">
+    <form method="dialog" class="dialogo-conteudo">
+      <span class="pilula botao-com-icone">
+        <svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg>
+        Apagar
+      </span>
+      <h2 id="dialogo-apagar-titulo" class="dialogo-titulo">Apagar <span id="dialogo-apagar-nome"></span>?</h2>
+      <p id="dialogo-apagar-texto" class="dialogo-texto">Isso não pode ser desfeito.</p>
+      <button type="submit" value="apagar" class="botao botao-largo botao-com-icone">
+        <svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg>
+        Apagar de vez
+      </button>
+      <!-- autofocus no "Voltar": se a pessoa apertar Enter sem pensar, nada é apagado -->
+      <button type="submit" value="voltar" class="botao botao-contorno botao-largo" autofocus>Voltar</button>
+      <button type="submit" value="cancelar" id="dialogo-apagar-cancelar" class="botao-texto">Só parar de contar? Marcar como cancelada</button>
+    </form>
+  </dialog>
+
+  <!-- Ordem dos scripts: todos rodam depois que a página é lida, nesta ordem.
+       A abertura vem primeiro para começar a animar enquanto a biblioteca do
+       Supabase ainda está baixando. -->
+  <script type="module" src="js/abertura.js"></script>
+
   <!-- Biblioteca do Supabase, versão fixada. O "integrity" é a impressão digital
        do arquivo: se o CDN entregar qualquer coisa diferente do pacote oficial,
        o navegador se recusa a executar. Ao trocar a versão, recalcular o hash. -->
   <script
+    defer
     src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"
     integrity="sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP"
     crossorigin="anonymous"></script>

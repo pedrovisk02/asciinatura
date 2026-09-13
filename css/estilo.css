@@ -30,6 +30,16 @@
   font-display: swap;
 }
 
+/* Letras das animações ASCII. JetBrains Mono, também SIL Open Font License
+   (fontes/LICENCA-JETBRAINS-MONO.txt): todas as letras têm a mesma largura,
+   o que forma a grade das animações. */
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('../fontes/jetbrains-mono-500.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+
 /* Cores e medidas --------------------------------------------------------------
    Paleta tirada da referência: #2B4239, #AFAFAF e #EDEDED, mais branco.
    Contraste conferido (mínimo 4,5:1 para texto comum):
@@ -44,11 +54,28 @@
   --texto-suave: #5e6360;
   --erro: #9a3b34;
 
+  /* Tons de apoio, todos derivados da paleta: letras das animações, fundo
+     dos blocos piscando e o brilho da linha recém-salva. */
+  --ascii-escuro: #4a6a5e;
+  --ascii-medio: #6f8f82;
+  --ascii-circulo: #c9c9c9;
+  --ascii-circulo-brilho: var(--claro);
+  --esqueleto: #d9d9d9;
+  --linha-destacada: #dde6e1;
+
+  /* Tons das manchas de letras, do mais apagado ao mais forte. Ficam em
+     variáveis para inverterem junto com o cartaz ao passar o mouse. */
+  --manchas-1: var(--ascii-escuro);
+  --manchas-2: var(--ascii-medio);
+  --manchas-3: var(--cinza);
+  --manchas-4: var(--claro);
+
   --raio-painel: 28px;
   --raio-campo: 16px;
   --espaco: 12px;
 
   --fonte: 'Montserrat', system-ui, sans-serif;
+  --fonte-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
 
 /* Base ------------------------------------------------------------------------ */
@@ -104,15 +131,123 @@ select {
   outline-offset: 2px;
 }
 
-.painel-verde :focus-visible {
+.painel-verde :focus-visible,
+.cartaz-ascii :focus-visible {
   outline-color: var(--claro);
+}
+
+/* Some da tela, mas continua sendo lido por leitores de tela. */
+.so-leitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Texto que aparece letra a letra: o "fantasma" invisível reserva o espaço
+   do texto inteiro, e a linha não pula de lugar enquanto as letras chegam. */
+.pilha {
+  display: grid;
+}
+
+.pilha > * {
+  grid-area: 1 / 1;
+  white-space: pre;
+}
+
+.fantasma {
+  visibility: hidden;
+}
+
+.icone {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Abertura -------------------------------------------------------------------
+   Cobre a tela enquanto o app carrega (js/abertura.js). */
+
+.abertura {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: var(--verde);
+  color: var(--claro);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding-bottom: 10vh;
+  transition: opacity 0.35s ease;
+  /* Rede de segurança: se o JavaScript não rodar, a abertura some sozinha
+     depois de 9 segundos e mostra o que houver embaixo. */
+  animation: abertura-some 0.01s 9s forwards;
+}
+
+@keyframes abertura-some {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+.abertura.saindo {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.abertura > canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.abertura-logo {
+  position: relative;
+  width: clamp(120px, 38vw, 168px);
+  aspect-ratio: 1;
+  margin-bottom: 12px;
+}
+
+.abertura-logo svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Com a animação rodando, o logo é desenhado no canvas; o SVG parado fica
+   só para quando não há animação. */
+.abertura.animada .abertura-logo svg {
+  visibility: hidden;
+}
+
+.abertura-nome {
+  position: relative;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.abertura-frase {
+  position: relative;
+  font-family: var(--fonte-mono);
+  font-size: 13px;
+  color: var(--cinza);
 }
 
 #app {
   max-width: 480px;
   margin: 0 auto;
   padding: var(--espaco);
-  padding-bottom: 96px;
   display: flex;
   flex-direction: column;
   gap: var(--espaco);
@@ -124,14 +259,37 @@ select {
 .topo {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   padding: 6px 8px 0;
 }
 
+/* Logo "Ascii + natura": ícone e nome, com "Ascii" na letra de computador
+   das animações e "natura" na letra do app. O mesmo nome aparece na abertura. */
 .marca {
-  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+}
+
+.marca img {
+  display: block;
+  width: 26px;
+  height: 26px;
+}
+
+.marca-nome {
+  display: flex;
+  align-items: baseline;
   font-weight: 800;
   letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.marca-ascii {
+  font-family: var(--fonte-mono);
+  font-weight: 500;
+  letter-spacing: -0.03em;
 }
 
 .topo-data {
@@ -181,8 +339,11 @@ select {
   align-items: flex-start;
   gap: 10px;
   isolation: isolate;
+  transition: background-color 0.35s ease, color 0.35s ease, transform 0.25s ease-out;
 }
 
+/* --circulo-x e --circulo-y vêm do interacoes.js: o círculo vai um pouco na
+   direção do mouse, e a transição deixa o movimento devagar. */
 .cartaz::before {
   content: '';
   position: absolute;
@@ -193,6 +354,40 @@ select {
   background: var(--claro);
   right: -48px;
   top: 38px;
+  transform: translate(var(--circulo-x, 0px), var(--circulo-y, 0px));
+  transition: transform 0.6s ease-out, background-color 0.35s ease;
+}
+
+/* Canvas das animações de letras, atrás do conteúdo do cartaz. */
+.cartaz > canvas {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+}
+
+/* Telas de acesso: cartaz verde com manchas de letras (js/ascii.js). */
+.cartaz-ascii {
+  background: var(--verde);
+  color: var(--claro);
+  min-height: 240px;
+}
+
+.cartaz-ascii::before {
+  display: none;
+}
+
+.cartaz-ascii .pilula {
+  background: var(--claro);
+  color: var(--verde);
+}
+
+/* Cartaz do total: o círculo sólido dá lugar ao círculo de algarismos. O
+   ::before continua existindo, invisível, porque é dele que a animação lê a
+   posição e o tamanho do círculo. */
+.circulo-em-letras::before {
+  background: transparent;
 }
 
 .titulo-cartaz {
@@ -216,6 +411,7 @@ select {
   padding: 4px 12px;
   font-size: 12px;
   font-weight: 700;
+  transition: background-color 0.35s ease, color 0.35s ease;
 }
 
 .rotulo {
@@ -258,6 +454,7 @@ select {
 /* Botões ----------------------------------------------------------------------- */
 
 .botao {
+  position: relative;
   min-height: 48px;
   border: 0;
   border-radius: 999px;
@@ -266,6 +463,7 @@ select {
   color: var(--branco);
   font-weight: 700;
   cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .painel-verde .botao {
@@ -288,11 +486,11 @@ select {
   color: var(--claro);
 }
 
-.botao-perigo,
-.painel-verde .botao-perigo {
-  background: var(--branco);
-  color: var(--erro);
-  border: 2px solid var(--erro);
+.botao-com-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .botao-texto {
@@ -307,6 +505,7 @@ select {
 }
 
 .botao-mini {
+  position: relative;
   min-height: 40px;
   border: 2px solid var(--verde);
   border-radius: 999px;
@@ -315,6 +514,7 @@ select {
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 button:disabled {
@@ -329,15 +529,32 @@ button:disabled {
   gap: 4px 16px;
 }
 
-/* Botão de adicionar preso ao pé da tela no celular, como em um app. */
+/* Botão de adicionar preso ao pé da tela no celular, como em um app. Um anel
+   da cor do fundo contorna o botão, e a lista parece recortada em curva em
+   volta dele. */
 .barra-acao {
   position: sticky;
-  bottom: var(--espaco);
+  bottom: 0;
   z-index: 1;
+  /* Espaço extra para a barra de gestos de celulares sem botão físico. */
+  padding-bottom: calc(var(--espaco) + env(safe-area-inset-bottom));
 }
 
 .barra-acao .botao {
   box-shadow: 0 0 0 6px var(--claro);
+}
+
+/* Tapa só a faixa entre o botão e a borda de baixo da tela, para a lista não
+   aparecer por baixo do botão. */
+.barra-acao::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: calc(-1 * var(--espaco));
+  right: calc(-1 * var(--espaco));
+  bottom: 0;
+  height: calc(var(--espaco) + env(safe-area-inset-bottom));
+  background: var(--claro);
 }
 
 /* Formulários ------------------------------------------------------------------ */
@@ -460,6 +677,7 @@ input::placeholder {
 }
 
 .cobranca {
+  position: relative;
   flex: 1;
   min-width: 0;
   min-height: 170px;
@@ -467,6 +685,7 @@ input::placeholder {
   flex-direction: column;
   justify-content: space-between;
   gap: 6px;
+  transition: background-color 0.3s ease, color 0.3s ease, transform 0.25s ease-out;
 }
 
 .cobranca-principal {
@@ -517,16 +736,297 @@ input::placeholder {
 }
 
 .linha {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 12px 0;
   border-bottom: 2px solid var(--claro);
+  transition: background-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .linha:last-child {
   border-bottom: 0;
   padding-bottom: 0;
+}
+
+/* Linha recém-salva: acende e apaga devagar, com um selo que some sozinho.
+   A sombra espalhada cria a "margem" do brilho sem mexer no tamanho da linha. */
+.linha.destacada {
+  border-radius: 8px;
+  animation: linha-acende 2.8s ease-out both;
+}
+
+@keyframes linha-acende {
+  0%,
+  25% {
+    background: var(--linha-destacada);
+    box-shadow: 0 0 0 8px var(--linha-destacada);
+  }
+
+  100% {
+    background: transparent;
+    box-shadow: 0 0 0 8px transparent;
+  }
+}
+
+.selo {
+  display: inline-block;
+  margin-left: 6px;
+  vertical-align: 2px;
+  background: var(--verde);
+  color: var(--branco);
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  animation: selo-some 2.8s both;
+}
+
+@keyframes selo-some {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+
+  10%,
+  80% {
+    opacity: 1;
+    transform: none;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Blocos piscando enquanto a lista carrega ---------------------------------------- */
+
+.esqueleto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco);
+}
+
+.esqueleto-bloco {
+  background: var(--esqueleto);
+  border-radius: var(--raio-painel);
+  animation: piscar 1.4s ease-in-out infinite;
+}
+
+.esqueleto-total {
+  height: 230px;
+}
+
+.esqueleto-dupla {
+  display: flex;
+  gap: var(--espaco);
+  height: 170px;
+}
+
+.esqueleto-dupla .esqueleto-bloco {
+  flex: 1;
+  animation-delay: 0.15s;
+}
+
+.esqueleto-dupla .esqueleto-bloco + .esqueleto-bloco {
+  animation-delay: 0.3s;
+}
+
+.esqueleto-lista {
+  height: 220px;
+  animation-delay: 0.45s;
+}
+
+@keyframes piscar {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* Entrada de qualquer tela: os blocos surgem em sequência enquanto os textos
+   se decifram (interacoes.js). Só opacidade, sem mover: o movimento fica por
+   conta das letras, e não briga com a inclinação 3D dos blocos. */
+.entrando > * {
+  animation: surgir 0.4s ease-out both;
+}
+
+.entrando > :nth-child(2) {
+  animation-delay: 0.06s;
+}
+
+.entrando > :nth-child(3) {
+  animation-delay: 0.12s;
+}
+
+.entrando > :nth-child(4) {
+  animation-delay: 0.18s;
+}
+
+/* O botão de adicionar fica fora do #inicio-conteudo; sem esta regra ele
+   aparecia sozinho, antes dos blocos, logo depois da abertura. Entra por último. */
+#inicio-conteudo.entrando ~ .barra-acao {
+  animation: surgir 0.4s 0.28s ease-out both;
+}
+
+@keyframes surgir {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* Onda ao clicar ou tocar (interacoes.js). A moldura tem o tamanho e as
+   curvas do elemento e corta a onda nas bordas. */
+.onda-moldura {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.onda {
+  position: absolute;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  animation: onda 0.6s ease-out forwards;
+}
+
+.onda-clara {
+  background: rgb(237 237 237 / 0.35);
+}
+
+.onda-escura {
+  background: rgb(43 66 57 / 0.2);
+}
+
+@keyframes onda {
+  to {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+}
+
+/* Cores invertidas ------------------------------------------------------------------
+   Ao passar o mouse, o verde vira claro e o claro vira verde. No celular, que
+   não tem mouse, a troca aparece enquanto o dedo toca (:active). A classe
+   .com-mouse é colocada pelo interacoes.js só em aparelhos com mouse; sem ela,
+   o :hover ficaria "grudado" depois de um toque no celular. */
+
+.com-mouse .botao:not(.botao-contorno):hover,
+.botao:not(.botao-contorno):active {
+  background: var(--branco);
+  color: var(--verde);
+  box-shadow: inset 0 0 0 2px var(--verde);
+}
+
+.com-mouse .barra-acao .botao:hover,
+.barra-acao .botao:active {
+  box-shadow: inset 0 0 0 2px var(--verde), 0 0 0 6px var(--claro);
+}
+
+.com-mouse .botao-contorno:hover,
+.botao-contorno:active {
+  background: var(--verde);
+  color: var(--claro);
+}
+
+.com-mouse .painel-verde .botao-contorno:hover,
+.painel-verde .botao-contorno:active {
+  background: var(--claro);
+  color: var(--verde);
+}
+
+.com-mouse .botao-mini:hover,
+.botao-mini:active {
+  background: var(--verde);
+  color: var(--branco);
+}
+
+/* Cartazes cinza (total, formulário, tela vazia) viram verdes. */
+.com-mouse .painel-cinza.cartaz:hover,
+.painel-cinza.cartaz:active {
+  background: var(--verde);
+  color: var(--claro);
+  --ascii-circulo: var(--ascii-medio);
+  --ascii-circulo-brilho: var(--cinza);
+}
+
+.com-mouse .painel-cinza.cartaz:not(.circulo-em-letras):hover::before,
+.painel-cinza.cartaz:not(.circulo-em-letras):active::before {
+  background: var(--cinza);
+}
+
+.com-mouse .painel-cinza.cartaz:hover .pilula,
+.painel-cinza.cartaz:active .pilula,
+.com-mouse .painel-cinza.cartaz:hover .botao-no-cartaz,
+.painel-cinza.cartaz:active .botao-no-cartaz {
+  background: var(--claro);
+  color: var(--verde);
+  box-shadow: none;
+}
+
+/* Cartazes verdes das telas de acesso viram brancos, e as letras escurecem.
+   Branco, e não o claro do fundo, para o bloco não sumir na página. */
+.com-mouse .cartaz-ascii:hover,
+.cartaz-ascii:active {
+  background: var(--branco);
+  color: var(--verde);
+  --manchas-1: #d4d4d4;
+  --manchas-2: #bdbdbd;
+  --manchas-3: var(--ascii-medio);
+  --manchas-4: var(--verde);
+}
+
+.com-mouse .cartaz-ascii:hover .pilula,
+.cartaz-ascii:active .pilula {
+  background: var(--verde);
+  color: var(--branco);
+}
+
+/* Blocos de cobrança: o verde vira branco e o branco vira verde. */
+.com-mouse .cobranca.painel-verde:hover,
+.cobranca.painel-verde:active {
+  background: var(--branco);
+  color: var(--verde);
+}
+
+.com-mouse .cobranca.painel-verde:hover .cobranca-dias,
+.cobranca.painel-verde:active .cobranca-dias {
+  color: var(--texto-suave);
+}
+
+.com-mouse .cobranca.painel-verde:hover .cobranca-info,
+.cobranca.painel-verde:active .cobranca-info {
+  color: var(--verde);
+}
+
+.com-mouse .cobranca.painel-branco:hover,
+.cobranca.painel-branco:active {
+  background: var(--verde);
+  color: var(--branco);
+}
+
+.com-mouse .cobranca.painel-branco:hover .cobranca-dias,
+.cobranca.painel-branco:active .cobranca-dias {
+  color: var(--cinza);
+}
+
+/* Linhas das listas acendem. */
+.com-mouse .linha:hover,
+.linha:active {
+  border-radius: 8px;
+  background: var(--claro);
+  box-shadow: 0 0 0 8px var(--claro);
 }
 
 .linha-texto {
@@ -603,6 +1103,89 @@ input::placeholder {
   font-weight: 800;
 }
 
+/* Confirmação de apagar ------------------------------------------------------------
+   No celular sobe da parte de baixo; no computador fica no meio (fim do arquivo). */
+
+.dialogo {
+  width: min(100% - 24px, 440px);
+  max-width: none;
+  margin: auto auto 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--verde);
+}
+
+.dialogo::backdrop {
+  background: rgb(22 33 29 / 0.62);
+}
+
+.dialogo[open] {
+  animation: dialogo-sobe 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes dialogo-sobe {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.dialogo-conteudo {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--claro);
+  border-radius: var(--raio-painel);
+  padding: 20px;
+}
+
+.dialogo-conteudo .pilula {
+  align-self: flex-start;
+}
+
+.dialogo-conteudo .pilula .icone {
+  width: 14px;
+  height: 14px;
+}
+
+.dialogo-titulo {
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+}
+
+.dialogo-texto {
+  color: var(--texto-suave);
+  margin-bottom: 6px;
+}
+
+/* Quem pediu "reduzir movimento" no aparelho: nada se mexe. ----------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .entrando > *,
+  #inicio-conteudo.entrando ~ .barra-acao,
+  .onda,
+  .esqueleto-bloco,
+  .selo,
+  .dialogo[open] {
+    animation: none;
+  }
+
+  .linha.destacada {
+    animation: none;
+    background: var(--linha-destacada);
+    box-shadow: 0 0 0 8px var(--linha-destacada);
+  }
+}
+
 /* Computador ---------------------------------------------------------------------
    Como no pôster de referência: total de ponta a ponta em cima, com o botão de
    adicionar no canto; embaixo, cobranças à esquerda e lista à direita. */
@@ -672,6 +1255,22 @@ input::placeholder {
     font-size: 52px;
   }
 
+  .dialogo {
+    margin: auto;
+  }
+
+  /* Blocos piscando no mesmo desenho da tela inicial do computador. */
+  .esqueleto {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 16px;
+  }
+
+  .esqueleto-total {
+    grid-column: 1 / -1;
+    height: 260px;
+  }
+
   /* Com o total na tela, o botão de adicionar já está no cartaz. O de baixo só
      aparece quando não há total (lista vazia ou falha ao carregar). */
   #inicio-conteudo:not([hidden]) ~ .barra-acao {
@@ -681,9 +1280,14 @@ input::placeholder {
   .barra-acao {
     position: static;
     align-self: flex-start;
+    padding: 0;
   }
 
   .barra-acao .botao {
     box-shadow: none;
+  }
+
+  .barra-acao::after {
+    display: none;
   }
 }
