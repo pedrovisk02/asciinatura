@@ -110,6 +110,29 @@ export function dataDeHoje(agora = new Date()) {
   return escreverData({ ano: agora.getFullYear(), mes: agora.getMonth() + 1, dia: agora.getDate() });
 }
 
+// Limites aceitos para o ano da próxima cobrança (os mesmos do campo de data).
+const ANO_MINIMO = 2000;
+const ANO_MAXIMO = 2099;
+
+// Decide que data gravar ao salvar uma edição. Devolve undefined para manter
+// a data que já está no banco.
+//
+// O formulário mostra a próxima cobrança já avançada, que é o que a pessoa
+// espera ver. Mas gravar essa data sem a pessoa ter mexido nela poderia perder
+// o dia original: uma assinatura do dia 31 mostrada como 28/02 passaria a ser
+// do dia 28 para sempre.
+export function dataParaGravarNaEdicao({ gravada, mostrada, digitada }) {
+  // A pessoa mudou a data: vale o que ela digitou.
+  if (digitada !== mostrada) return digitada;
+
+  // A data gravada tem um ano fora do limite (ex: "0027"): aproveita para
+  // consertar com a data que o formulário mostrou.
+  const anoGravado = Number(gravada.split('-')[0]);
+  if (!(anoGravado >= ANO_MINIMO && anoGravado <= ANO_MAXIMO)) return digitada;
+
+  return undefined;
+}
+
 // ---------------------------------------------------------------------------
 // Tela inicial
 

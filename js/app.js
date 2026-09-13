@@ -10,8 +10,8 @@ import {
   erroNoLinkRecebido,
   mensagemDeErro,
 } from './auth.js';
-import { listarAssinaturas, criarAssinatura } from './dados.js';
-import { resumoDoInicio, dataDeHoje } from './calculos.js';
+import { listarAssinaturas, criarAssinatura, atualizarAssinatura, apagarAssinatura } from './dados.js';
+import { resumoDoInicio, dataDeHoje, dataParaGravarNaEdicao } from './calculos.js';
 
 const telas = {
   carregando: document.querySelector('#tela-carregando'),
@@ -46,6 +46,22 @@ function mostrarInicio(email) {
   document.querySelector('#email-usuario').textContent = email;
   mostrarTela('inicio');
   carregarInicio();
+}
+
+// Trava o botão enquanto a ação espera resposta, para um clique duplo não
+// salvar duas vezes, e mostra o erro, se houver, em linguagem de gente.
+async function comBotaoTravado(botao, mostrarErro, acao) {
+  mostrarErro('');
+  botao.disabled = true;
+
+  try {
+    await acao();
+  } catch (falha) {
+    console.error(falha);
+    mostrarErro(mensagemDeErro(falha));
+  } finally {
+    botao.disabled = false;
+  }
 }
 
 // Tela inicial ----------------------------------------------------------------
@@ -90,7 +106,7 @@ function quandoCobra(dias) {
 }
 
 // Mensal mostra só o valor. Trimestral e anual mostram o equivalente mensal,
-// marcado como tal, e o valor realmente cobrado entre parênteses.
+// marcado como tal, e o valor realmente cobrado.
 function textoDoValorMensal(assinatura) {
   const porMes = `${formatoReais.format(assinatura.valorMensal)} por mês`;
   if (assinatura.ciclo === 'mensal') return porMes;
@@ -99,12 +115,21 @@ function textoDoValorMensal(assinatura) {
   return `${porMes}, equivalente a ${cobrado}`;
 }
 
-// Troca o conteúdo de uma lista por um item de texto para cada assinatura.
-function preencherLista(lista, assinaturas, textoDoItem) {
+// Troca o conteúdo de uma lista: um item por assinatura, com o texto e, se
+// houver, botões de ação (cada um com um texto e o que fazer ao clicar).
+function preencherLista(lista, assinaturas, textoDoItem, botoes = []) {
   const itens = assinaturas.map((assinatura) => {
     const item = document.createElement('li');
     // textContent: um nome como "<b>teste</b>" aparece escrito, sem virar código.
-    item.textContent = textoDoItem(assinatura);
+    item.append(textoDoItem(assinatura));
+
+    for (const { texto, aoClicar } of botoes) {
+      const botao = document.createElement('button');
+      botao.type = 'button';
+      botao.textContent = texto;
+      botao.addEventListener('click', () => aoClicar(assinatura, botao));
+      item.append(' ', botao);
+    }
     return item;
   });
   lista.replaceChildren(...itens);
@@ -139,14 +164,30 @@ async function carregarInicio() {
   }
 }
 
+const botaoEditar = { texto: 'Editar', aoClicar: (assinatura) => abrirFormulario(assinatura) };
+
+const botaoReativar = {
+  texto: 'Reativar',
+  aoClicar: (assinatura, botao) =>
+    comBotaoTravado(botao, mostrarAviso, async () => {
+      await atualizarAssinatura(assinatura.id, { ativa: true });
+      mostrarAviso(`"${assinatura.nome}" foi reativada e voltou a contar no total.`);
+      await carregarInicio();
+    }),
+};
+
 function mostrarResumo(resumo, quantidadeTotal) {
   // Sem nenhuma assinatura (nem cancelada), a tela orienta em vez de mostrar zero.
   inicioVazio.hidden = quantidadeTotal > 0;
   inicioConteudo.hidden = quantidadeTotal === 0;
 
   blocoComProblema.hidden = resumo.comProblema.length === 0;
-  preencherLista(listas.comProblema, resumo.comProblema, (assinatura) =>
-    `${assinatura.nome}: data gravada ${formatarDataCompleta(assinatura.proxima_cobranca)}`);
+  preencherLista(
+    listas.comProblema,
+    resumo.comProblema,
+    (assinatura) => `${assinatura.nome}: data gravada ${formatarDataCompleta(assinatura.proxima_cobranca)}`,
+    [{ ...botaoEditar, texto: 'Corrigir' }],
+  );
 
   document.querySelector('#total-mensal').textContent = formatoReais.format(resumo.totalMensal);
   document.querySelector('#quantidade-ativas').textContent =
@@ -157,41 +198,135 @@ function mostrarResumo(resumo, quantidadeTotal) {
     `(${formatarDiaEMes(assinatura.dataDaCobranca)}), ${formatoReais.format(assinatura.valor)}`);
   document.querySelector('#chegando-vazio').hidden = resumo.chegando.length > 0;
 
-  preencherLista(listas.ativas, resumo.ativas, (assinatura) =>
-    `${assinatura.nome}: ${textoDoValorMensal(assinatura)}`);
+  preencherLista(
+    listas.ativas,
+    resumo.ativas,
+    (assinatura) => `${assinatura.nome}: ${textoDoValorMensal(assinatura)}`,
+    [botaoEditar],
+  );
   document.querySelector('#ativas-vazio').hidden = resumo.ativas.length > 0;
 
   blocoCanceladas.hidden = resumo.canceladas.length === 0;
   document.querySelector('#quantidade-canceladas').textContent = resumo.canceladas.length;
-  preencherLista(listas.canceladas, resumo.canceladas, (assinatura) =>
-    `${assinatura.nome}: ${formatoReais.format(assinatura.valor)} ${PERIODO_DO_CICLO[assinatura.ciclo]}`);
+  preencherLista(
+    listas.canceladas,
+    resumo.canceladas,
+    (assinatura) => `${assinatura.nome}: ${formatoReais.format(assinatura.valor)} ${PERIODO_DO_CICLO[assinatura.ciclo]}`,
+    [botaoReativar, botaoEditar],
+  );
 }
 
-// Formulários -----------------------------------------------------------------
+// Formulário de assinatura (nova ou edição) --------------------------------------
 
-// Liga um formulário a uma ação: trava o botão enquanto espera a resposta e,
-// se der errado, mostra o erro dentro do próprio formulário sem apagar o que
-// foi digitado.
+const formularioAssinatura = document.querySelector('#form-assinatura');
+const erroDoFormulario = formularioAssinatura.querySelector('.erro');
+const acoesEdicao = document.querySelector('#acoes-edicao');
+const botaoAlternarAtiva = document.querySelector('#botao-alternar-ativa');
+const botaoApagar = document.querySelector('#botao-apagar');
+
+// A assinatura aberta no formulário (null quando é uma nova) e a data que o
+// formulário mostrou ao abrir, para saber depois se a pessoa mexeu nela.
+let assinaturaEmEdicao = null;
+let dataMostradaNoFormulario = null;
+
+function mostrarErroDoFormulario(texto) {
+  erroDoFormulario.textContent = texto;
+}
+
+function abrirFormulario(assinatura = null) {
+  assinaturaEmEdicao = assinatura;
+  formularioAssinatura.reset();
+  mostrarErroDoFormulario('');
+  mostrarAviso('');
+
+  document.querySelector('#titulo-formulario').textContent = assinatura ? 'Editar assinatura' : 'Nova assinatura';
+  acoesEdicao.hidden = !assinatura;
+
+  if (assinatura) {
+    const campo = (nome) => formularioAssinatura.elements.namedItem(nome);
+    campo('nome').value = assinatura.nome;
+    campo('valor').value = assinatura.valor;
+    campo('ciclo').value = assinatura.ciclo;
+    campo('categoria').value = assinatura.categoria ?? '';
+
+    // Ativas mostram a próxima cobrança já avançada; canceladas e com problema,
+    // a data gravada.
+    dataMostradaNoFormulario = assinatura.dataDaCobranca ?? assinatura.proxima_cobranca;
+    campo('proxima_cobranca').value = dataMostradaNoFormulario;
+
+    botaoAlternarAtiva.textContent = assinatura.ativa ? 'Marcar como cancelada' : 'Reativar assinatura';
+  }
+
+  mostrarTela('formulario');
+}
+
+async function voltarAoInicio(mensagem) {
+  assinaturaEmEdicao = null;
+  formularioAssinatura.reset();
+  mostrarTela('inicio');
+  mostrarAviso(mensagem);
+  // Relê do banco em vez de só mexer na tela: assim a tela mostra o que
+  // realmente ficou gravado.
+  await carregarInicio();
+}
+
+// Liga um formulário a uma ação. Se der errado, o erro aparece dentro do
+// próprio formulário e o que foi digitado continua lá.
 function ligarFormulario(seletor, acao) {
   const formulario = document.querySelector(seletor);
   const botao = formulario.querySelector('button[type="submit"]');
   const erro = formulario.querySelector('.erro');
 
-  formulario.addEventListener('submit', async (evento) => {
+  formulario.addEventListener('submit', (evento) => {
     evento.preventDefault();
-    erro.textContent = '';
-    botao.disabled = true;
-
-    try {
-      await acao(new FormData(formulario), formulario);
-    } catch (falha) {
-      console.error(falha);
-      erro.textContent = mensagemDeErro(falha);
-    } finally {
-      botao.disabled = false;
-    }
+    comBotaoTravado(botao, (texto) => { erro.textContent = texto; }, () =>
+      acao(new FormData(formulario), formulario));
   });
 }
+
+ligarFormulario('#form-assinatura', async (dados) => {
+  const campos = {
+    nome: dados.get('nome').trim(),
+    valor: Number(dados.get('valor')),
+    ciclo: dados.get('ciclo'),
+    categoria: dados.get('categoria').trim() || null,
+  };
+
+  if (assinaturaEmEdicao) {
+    campos.proximaCobranca = dataParaGravarNaEdicao({
+      gravada: assinaturaEmEdicao.proxima_cobranca,
+      mostrada: dataMostradaNoFormulario,
+      digitada: dados.get('proxima_cobranca'),
+    });
+    await atualizarAssinatura(assinaturaEmEdicao.id, campos);
+    await voltarAoInicio('Alterações salvas.');
+  } else {
+    campos.proximaCobranca = dados.get('proxima_cobranca');
+    await criarAssinatura(campos);
+    await voltarAoInicio('Assinatura salva.');
+  }
+});
+
+botaoAlternarAtiva.addEventListener('click', () =>
+  comBotaoTravado(botaoAlternarAtiva, mostrarErroDoFormulario, async () => {
+    const { id, nome, ativa } = assinaturaEmEdicao;
+    await atualizarAssinatura(id, { ativa: !ativa });
+    await voltarAoInicio(ativa
+      ? `"${nome}" foi cancelada. Ela saiu do total e continua em "Ver canceladas".`
+      : `"${nome}" foi reativada e voltou a contar no total.`);
+  }));
+
+botaoApagar.addEventListener('click', () =>
+  comBotaoTravado(botaoApagar, mostrarErroDoFormulario, async () => {
+    const { id, nome } = assinaturaEmEdicao;
+    // Única ação sem volta do app, por isso a confirmação.
+    if (!window.confirm(`Apagar "${nome}" de vez? Isso não pode ser desfeito.`)) return;
+
+    await apagarAssinatura(id);
+    await voltarAoInicio(`"${nome}" foi apagada.`);
+  }));
+
+// Formulários de acesso ----------------------------------------------------------
 
 ligarFormulario('#form-entrar', async (dados) => {
   await entrar(dados.get('email'), dados.get('senha'));
@@ -227,34 +362,9 @@ ligarFormulario('#form-nova-senha', async (dados, formulario) => {
   mostrarAviso('Senha alterada.');
 });
 
-const formularioAssinatura = document.querySelector('#form-assinatura');
+// Botões de navegação -------------------------------------------------------------
 
-ligarFormulario('#form-assinatura', async (dados, formulario) => {
-  await criarAssinatura({
-    nome: dados.get('nome').trim(),
-    valor: Number(dados.get('valor')),
-    ciclo: dados.get('ciclo'),
-    proximaCobranca: dados.get('proxima_cobranca'),
-    categoria: dados.get('categoria').trim() || null,
-  });
-
-  // Só limpa o formulário depois de salvar. Se der erro, o que foi digitado fica.
-  formulario.reset();
-  mostrarTela('inicio');
-  mostrarAviso('Assinatura salva.');
-  // Relê do banco em vez de só acrescentar na tela: assim a tela mostra o que
-  // realmente ficou gravado.
-  await carregarInicio();
-});
-
-// Botões ------------------------------------------------------------------------
-
-document.querySelector('#botao-adicionar').addEventListener('click', () => {
-  formularioAssinatura.reset();
-  formularioAssinatura.querySelector('.erro').textContent = '';
-  mostrarAviso('');
-  mostrarTela('formulario');
-});
+document.querySelector('#botao-adicionar').addEventListener('click', () => abrirFormulario());
 
 for (const botao of document.querySelectorAll('[data-ir-para]')) {
   botao.addEventListener('click', () => {
@@ -299,6 +409,7 @@ acompanharSessao((evento, sessao) => {
 
   if (!sessao) {
     definindoNovaSenha = false;
+    assinaturaEmEdicao = null;
     // Apaga da página as assinaturas de quem saiu, para a próxima pessoa que
     // usar este navegador não ver nada que não é dela.
     limparInicio();

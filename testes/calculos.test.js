@@ -9,6 +9,7 @@ import {
   diasEntre,
   dataDeHoje,
   resumoDoInicio,
+  dataParaGravarNaEdicao,
 } from '../js/calculos.js';
 
 // Compara valores em reais ignorando a imprecisão minúscula das contas com
@@ -131,6 +132,53 @@ describe('dataDeHoje', () => {
 
   test('completa mês e dia com zero à esquerda', () => {
     assert.equal(dataDeHoje(new Date(2026, 0, 5, 0, 5)), '2026-01-05');
+  });
+});
+
+describe('dataParaGravarNaEdicao', () => {
+  test('sem mexer na data, mantém a gravada (o dia 31 não vira 28)', () => {
+    const resultado = dataParaGravarNaEdicao({
+      gravada: '2026-01-31',
+      mostrada: '2026-02-28',
+      digitada: '2026-02-28',
+    });
+    assert.equal(resultado, undefined);
+  });
+
+  test('data que já passou, sem mexer: mantém a gravada', () => {
+    const resultado = dataParaGravarNaEdicao({
+      gravada: '2026-08-05',
+      mostrada: '2026-10-05',
+      digitada: '2026-10-05',
+    });
+    assert.equal(resultado, undefined);
+  });
+
+  test('a pessoa mudou a data: grava a nova', () => {
+    const resultado = dataParaGravarNaEdicao({
+      gravada: '2026-08-05',
+      mostrada: '2026-10-05',
+      digitada: '2026-10-20',
+    });
+    assert.equal(resultado, '2026-10-20');
+  });
+
+  test('ano gravado fora do limite ("0027"): conserta com a data mostrada', () => {
+    const resultado = dataParaGravarNaEdicao({
+      gravada: '0027-03-01',
+      mostrada: '2027-03-01',
+      digitada: '2027-03-01',
+    });
+    assert.equal(resultado, '2027-03-01');
+  });
+
+  test('ano gravado com 5 dígitos: grava a data corrigida pela pessoa', () => {
+    const resultado = dataParaGravarNaEdicao({
+      gravada: '20262-08-05',
+      mostrada: '20262-08-05',
+      digitada: '2026-08-05',
+    });
+    assert.equal(resultado, '2026-08-05');
   });
 });
 

@@ -140,7 +140,7 @@
     </section>
 
     <section id="tela-formulario" hidden>
-      <h2>Nova assinatura</h2>
+      <h2 id="titulo-formulario">Nova assinatura</h2>
       <form id="form-assinatura" method="post">
         <!-- pattern exige ao menos um caractere que não seja espaço -->
         <label>Nome
@@ -166,7 +166,17 @@
         <p class="erro" role="alert"></p>
         <button type="submit">Salvar</button>
       </form>
-      <button type="button" data-ir-para="inicio">Cancelar</button>
+
+      <!-- Só na edição. Os erros destes botões aparecem no mesmo lugar dos
+           erros do formulário. -->
+      <div id="acoes-edicao" hidden>
+        <h3>Outras ações</h3>
+        <button type="button" id="botao-alternar-ativa">Marcar como cancelada</button>
+        <button type="button" id="botao-apagar">Apagar de vez</button>
+      </div>
+
+      <!-- "Voltar", e não "Cancelar", para não confundir com cancelar a assinatura -->
+      <p><button type="button" data-ir-para="inicio">Voltar</button></p>
     </section>
   </main>
 

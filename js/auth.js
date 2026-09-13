@@ -101,6 +101,9 @@ export function mensagemDeErro(erro) {
     case 'over_email_send_rate_limit':
     case 'over_request_rate_limit':
       return 'Muitas tentativas em pouco tempo. Espere alguns minutos e tente de novo.';
+    // Vem do banco, não do login: a alteração ou exclusão não encontrou a linha.
+    case 'PGRST116':
+      return 'Essa assinatura não foi encontrada. Ela pode ter sido apagada em outro aparelho.';
     default:
       return 'Algo deu errado. Tente de novo em instantes.';
   }
