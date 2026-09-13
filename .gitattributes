@@ -1,0 +1,3 @@
+# Guarda todos os arquivos de texto com quebra de linha no padrão Unix (LF),
+# o mesmo dos servidores onde o app vai ser publicado.
+* text=auto eol=lf

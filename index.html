@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Política de segurança: diz ao navegador de onde a página pode carregar
+       código e com quem pode conversar. Se alguém conseguir injetar um script
+       na página, ele não roda e não consegue mandar dados para outro servidor.
+       Ao adicionar fontes ou imagens externas no Passo 9, liberar aqui. -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' https://cdn.jsdelivr.net;
+    connect-src 'self' https://wqwldmcacnpsotnrecur.supabase.co;
+    img-src 'self' data:;
+    style-src 'self';
+    object-src 'none';
+    base-uri 'self';
+    form-action 'self'">
+
+  <title>Assinaturas</title>
+  <link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+  <main id="app">
+    <h1>Assinaturas</h1>
+    <p id="status-conexao">Verificando conexão...</p>
+  </main>
+
+  <!-- Biblioteca do Supabase, versão fixada. O "integrity" é a impressão digital
+       do arquivo: se o CDN entregar qualquer coisa diferente do pacote oficial,
+       o navegador se recusa a executar. Ao trocar a versão, recalcular o hash. -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"
+    integrity="sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP"
+    crossorigin="anonymous"></script>
+
+  <!-- type="module" permite usar import/export entre os arquivos de js/ -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

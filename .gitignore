@@ -1,0 +1,6 @@
+# Configuração pessoal do Claude Code nesta máquina
+.claude/settings.local.json
+
+# Arquivos gerados pelo Windows
+Thumbs.db
+desktop.ini
