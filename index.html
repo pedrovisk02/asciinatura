@@ -95,8 +95,53 @@
         <button type="button" id="botao-sair">Sair</button>
       </p>
 
+      <!-- "Carregando..." ou aviso de erro ao buscar as assinaturas -->
+      <p id="estado-inicio" role="status"></p>
+
+      <!-- Primeira visita, sem nenhuma assinatura: orientar em vez de mostrar zero -->
+      <div id="inicio-vazio" hidden>
+        <h2>Nenhuma assinatura por aqui ainda</h2>
+        <p>
+          Cadastre as cobranças que se repetem, como streaming, academia ou
+          armazenamento na nuvem. O app soma quanto elas custam por mês e mostra
+          o que vai ser cobrado em seguida.
+        </p>
+      </div>
+
+      <div id="inicio-conteudo" hidden>
+        <!-- Assinaturas com dado que não dá para calcular: apontadas, e não somadas -->
+        <div id="bloco-com-problema" role="alert" hidden>
+          <p><strong>Atenção:</strong> estas assinaturas têm uma data que o app não
+          consegue entender e ficaram fora do total. Corrija a data para elas voltarem a contar.</p>
+          <ul id="lista-com-problema"></ul>
+        </div>
+
+        <h2>Total do mês</h2>
+        <p><strong id="total-mensal"></strong></p>
+        <p id="quantidade-ativas"></p>
+
+        <h2>Chegando</h2>
+        <p>Cobranças dos próximos 30 dias.</p>
+        <ul id="lista-chegando"></ul>
+        <p id="chegando-vazio" hidden>Nenhuma cobrança nos próximos 30 dias.</p>
+
+        <h2>Todas</h2>
+        <ul id="lista-ativas"></ul>
+        <p id="ativas-vazio" hidden>Nenhuma assinatura ativa.</p>
+      </div>
+
+      <p><button type="button" id="botao-adicionar">Adicionar assinatura</button></p>
+
+      <!-- Controle discreto: as canceladas continuam alcançáveis, mas não atrapalham -->
+      <details id="bloco-canceladas" hidden>
+        <summary>Ver canceladas (<span id="quantidade-canceladas"></span>)</summary>
+        <ul id="lista-canceladas"></ul>
+      </details>
+    </section>
+
+    <section id="tela-formulario" hidden>
       <h2>Nova assinatura</h2>
-      <form id="form-nova-assinatura" method="post">
+      <form id="form-assinatura" method="post">
         <!-- pattern exige ao menos um caractere que não seja espaço -->
         <label>Nome
           <input name="nome" required maxlength="100" pattern=".*\S.*" placeholder="Netflix">
@@ -111,8 +156,9 @@
             <option value="anual">Anual</option>
           </select>
         </label>
+        <!-- min e max barram anos digitados errado, como "0026" ou "20262" -->
         <label>Próxima cobrança
-          <input name="proxima_cobranca" type="date" required>
+          <input name="proxima_cobranca" type="date" min="2000-01-01" max="2099-12-31" required>
         </label>
         <label>Categoria (opcional)
           <input name="categoria" maxlength="50" placeholder="streaming">
@@ -120,11 +166,7 @@
         <p class="erro" role="alert"></p>
         <button type="submit">Salvar</button>
       </form>
-
-      <!-- Listagem crua do Passo 5. A tela inicial de verdade vem no Passo 6. -->
-      <h2>Minhas assinaturas</h2>
-      <p id="estado-lista"></p>
-      <ul id="lista-assinaturas"></ul>
+      <button type="button" data-ir-para="inicio">Cancelar</button>
     </section>
   </main>
 

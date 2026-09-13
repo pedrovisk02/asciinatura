@@ -50,7 +50,9 @@ function lerData(texto) {
 }
 
 function escreverData({ ano, mes, dia }) {
-  return `${ano}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+  // O ano sempre com 4 dígitos: "26" viraria um texto que, comparado com
+  // "2026-09-13", parece ser depois de hoje.
+  return `${String(ano).padStart(4, '0')}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
 }
 
 function anoBissexto(ano) {
@@ -89,4 +91,70 @@ export function proximaDataValida(dataGravada, ciclo, hoje) {
     // No formato AAAA-MM-DD, comparar os textos é o mesmo que comparar as datas.
     if (candidata >= hoje) return candidata;
   }
+}
+
+// Quantos dias do primeiro dia até o segundo (negativo se o segundo vier antes).
+export function diasEntre(inicio, fim) {
+  const a = lerData(inicio);
+  const b = lerData(fim);
+  // Date.UTC só faz a conta, não lê texto; e no horário universal todo dia tem
+  // exatamente 24 horas, então a divisão sempre dá um número inteiro de dias.
+  const milissegundosPorDia = 24 * 60 * 60 * 1000;
+  return (Date.UTC(b.ano, b.mes - 1, b.dia) - Date.UTC(a.ano, a.mes - 1, a.dia)) / milissegundosPorDia;
+}
+
+// A data de hoje no relógio de quem está usando o app, no formato AAAA-MM-DD.
+// Não usa toISOString(), que devolve a data no horário universal: no Brasil,
+// depois das 21h, isso já seria o dia seguinte.
+export function dataDeHoje(agora = new Date()) {
+  return escreverData({ ano: agora.getFullYear(), mes: agora.getMonth() + 1, dia: agora.getDate() });
+}
+
+// ---------------------------------------------------------------------------
+// Tela inicial
+
+// Até quantos dias à frente uma cobrança aparece em "Chegando" (hoje incluído).
+export const DIAS_DO_CHEGANDO = 30;
+
+// Ordem alfabética do jeito que uma pessoa espera: sem separar maiúsculas de
+// minúsculas e com acentos no lugar certo.
+function compararNomes(a, b) {
+  return a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' });
+}
+
+// Monta tudo o que a tela inicial mostra, a partir das assinaturas como vêm do
+// banco. Assinatura cancelada (ativa = false) fica fora do total e de
+// "Chegando", mas continua na lista de canceladas.
+export function resumoDoInicio(assinaturas, hoje) {
+  const ativas = [];
+  const comProblema = [];
+
+  for (const assinatura of assinaturas.filter((a) => a.ativa)) {
+    try {
+      // Data já avançada, se a gravada no banco tiver passado.
+      const dataDaCobranca = proximaDataValida(assinatura.proxima_cobranca, assinatura.ciclo, hoje);
+      ativas.push({
+        ...assinatura,
+        valorMensal: valorMensalEquivalente(assinatura.valor, assinatura.ciclo),
+        dataDaCobranca,
+        diasAteCobranca: diasEntre(hoje, dataDaCobranca),
+      });
+    } catch {
+      // Dado que não dá para calcular (ex: data com ano de 5 dígitos). Fica
+      // fora do total e é apontado na tela, em vez de travar a tela inteira ou
+      // entrar na soma com um valor errado.
+      comProblema.push(assinatura);
+    }
+  }
+
+  return {
+    totalMensal: ativas.reduce((soma, assinatura) => soma + assinatura.valorMensal, 0),
+    quantidadeAtivas: ativas.length,
+    chegando: ativas
+      .filter((assinatura) => assinatura.diasAteCobranca <= DIAS_DO_CHEGANDO)
+      .sort((a, b) => a.diasAteCobranca - b.diasAteCobranca || compararNomes(a, b)),
+    ativas: ativas.sort(compararNomes),
+    comProblema: comProblema.sort(compararNomes),
+    canceladas: assinaturas.filter((assinatura) => !assinatura.ativa).sort(compararNomes),
+  };
 }

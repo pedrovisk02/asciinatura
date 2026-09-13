@@ -11,6 +11,7 @@ import {
   mensagemDeErro,
 } from './auth.js';
 import { listarAssinaturas, criarAssinatura } from './dados.js';
+import { resumoDoInicio, dataDeHoje } from './calculos.js';
 
 const telas = {
   carregando: document.querySelector('#tela-carregando'),
@@ -19,6 +20,7 @@ const telas = {
   pedirNovaSenha: document.querySelector('#tela-pedir-nova-senha'),
   novaSenha: document.querySelector('#tela-nova-senha'),
   inicio: document.querySelector('#tela-inicio'),
+  formulario: document.querySelector('#tela-formulario'),
 };
 
 const aviso = document.querySelector('#aviso');
@@ -43,57 +45,129 @@ function mostrarAviso(texto) {
 function mostrarInicio(email) {
   document.querySelector('#email-usuario').textContent = email;
   mostrarTela('inicio');
-  carregarLista();
+  carregarInicio();
 }
 
-// Lista de assinaturas -------------------------------------------------------
+// Tela inicial ----------------------------------------------------------------
 
-const lista = document.querySelector('#lista-assinaturas');
-const estadoLista = document.querySelector('#estado-lista');
 const formatoReais = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
-// Conta as cargas da lista. Se uma resposta antiga chegar depois de uma nova,
-// ou depois de a pessoa sair, ela é descartada em vez de aparecer na tela.
+const estadoInicio = document.querySelector('#estado-inicio');
+const inicioVazio = document.querySelector('#inicio-vazio');
+const inicioConteudo = document.querySelector('#inicio-conteudo');
+const blocoCanceladas = document.querySelector('#bloco-canceladas');
+const blocoComProblema = document.querySelector('#bloco-com-problema');
+const listas = {
+  comProblema: document.querySelector('#lista-com-problema'),
+  chegando: document.querySelector('#lista-chegando'),
+  ativas: document.querySelector('#lista-ativas'),
+  canceladas: document.querySelector('#lista-canceladas'),
+};
+
+const PERIODO_DO_CICLO = { mensal: 'por mês', trimestral: 'por trimestre', anual: 'por ano' };
+
+// Conta as cargas da tela inicial. Se uma resposta antiga chegar depois de uma
+// nova, ou depois de a pessoa sair, ela é descartada em vez de aparecer na tela.
 let numeroDaCarga = 0;
 
-// "2026-10-05" vira "05/10/2026", sem passar pelo Date (ver calculos.js).
-function formatarData(texto) {
+// "2026-10-05" vira "05/10", sem passar pelo Date (ver calculos.js).
+function formatarDiaEMes(texto) {
+  const [, mes, dia] = texto.split('-');
+  return `${dia}/${mes}`;
+}
+
+// "2026-10-05" vira "05/10/2026". Funciona até com datas estranhas, como
+// "20262-08-05", para a pessoa enxergar exatamente o que foi gravado.
+function formatarDataCompleta(texto) {
   const [ano, mes, dia] = texto.split('-');
   return `${dia}/${mes}/${ano}`;
 }
 
-function limparLista() {
-  numeroDaCarga++;
-  lista.replaceChildren();
-  estadoLista.textContent = '';
+function quandoCobra(dias) {
+  if (dias === 0) return 'hoje';
+  if (dias === 1) return 'amanhã';
+  return `em ${dias} dias`;
 }
 
-async function carregarLista() {
+// Mensal mostra só o valor. Trimestral e anual mostram o equivalente mensal,
+// marcado como tal, e o valor realmente cobrado entre parênteses.
+function textoDoValorMensal(assinatura) {
+  const porMes = `${formatoReais.format(assinatura.valorMensal)} por mês`;
+  if (assinatura.ciclo === 'mensal') return porMes;
+
+  const cobrado = `${formatoReais.format(assinatura.valor)} ${PERIODO_DO_CICLO[assinatura.ciclo]}`;
+  return `${porMes}, equivalente a ${cobrado}`;
+}
+
+// Troca o conteúdo de uma lista por um item de texto para cada assinatura.
+function preencherLista(lista, assinaturas, textoDoItem) {
+  const itens = assinaturas.map((assinatura) => {
+    const item = document.createElement('li');
+    // textContent: um nome como "<b>teste</b>" aparece escrito, sem virar código.
+    item.textContent = textoDoItem(assinatura);
+    return item;
+  });
+  lista.replaceChildren(...itens);
+}
+
+function limparInicio() {
+  numeroDaCarga++;
+  estadoInicio.textContent = '';
+  inicioVazio.hidden = true;
+  inicioConteudo.hidden = true;
+  blocoCanceladas.hidden = true;
+  blocoComProblema.hidden = true;
+  for (const lista of Object.values(listas)) {
+    lista.replaceChildren();
+  }
+}
+
+async function carregarInicio() {
   const estaCarga = ++numeroDaCarga;
-  estadoLista.textContent = 'Carregando...';
+  estadoInicio.textContent = 'Carregando...';
 
   try {
     const assinaturas = await listarAssinaturas();
     if (estaCarga !== numeroDaCarga) return;
 
-    lista.replaceChildren();
-    estadoLista.textContent = assinaturas.length === 0 ? 'Nenhuma assinatura cadastrada ainda.' : '';
-
-    for (const assinatura of assinaturas) {
-      const item = document.createElement('li');
-      // textContent: um nome como "<b>teste</b>" aparece escrito, sem virar código.
-      item.textContent =
-        `${assinatura.nome}: ${formatoReais.format(assinatura.valor)} (${assinatura.ciclo}), ` +
-        `próxima cobrança em ${formatarData(assinatura.proxima_cobranca)}` +
-        (assinatura.categoria ? `, categoria ${assinatura.categoria}` : '');
-      lista.append(item);
-    }
+    estadoInicio.textContent = '';
+    mostrarResumo(resumoDoInicio(assinaturas, dataDeHoje()), assinaturas.length);
   } catch (falha) {
     if (estaCarga !== numeroDaCarga) return;
     console.error(falha);
-    estadoLista.textContent = 'Não foi possível carregar as assinaturas. Recarregue a página para tentar de novo.';
+    estadoInicio.textContent = 'Não foi possível carregar as assinaturas. Recarregue a página para tentar de novo.';
   }
 }
+
+function mostrarResumo(resumo, quantidadeTotal) {
+  // Sem nenhuma assinatura (nem cancelada), a tela orienta em vez de mostrar zero.
+  inicioVazio.hidden = quantidadeTotal > 0;
+  inicioConteudo.hidden = quantidadeTotal === 0;
+
+  blocoComProblema.hidden = resumo.comProblema.length === 0;
+  preencherLista(listas.comProblema, resumo.comProblema, (assinatura) =>
+    `${assinatura.nome}: data gravada ${formatarDataCompleta(assinatura.proxima_cobranca)}`);
+
+  document.querySelector('#total-mensal').textContent = formatoReais.format(resumo.totalMensal);
+  document.querySelector('#quantidade-ativas').textContent =
+    resumo.quantidadeAtivas === 1 ? '1 assinatura ativa' : `${resumo.quantidadeAtivas} assinaturas ativas`;
+
+  preencherLista(listas.chegando, resumo.chegando, (assinatura) =>
+    `${assinatura.nome}: ${quandoCobra(assinatura.diasAteCobranca)} ` +
+    `(${formatarDiaEMes(assinatura.dataDaCobranca)}), ${formatoReais.format(assinatura.valor)}`);
+  document.querySelector('#chegando-vazio').hidden = resumo.chegando.length > 0;
+
+  preencherLista(listas.ativas, resumo.ativas, (assinatura) =>
+    `${assinatura.nome}: ${textoDoValorMensal(assinatura)}`);
+  document.querySelector('#ativas-vazio').hidden = resumo.ativas.length > 0;
+
+  blocoCanceladas.hidden = resumo.canceladas.length === 0;
+  document.querySelector('#quantidade-canceladas').textContent = resumo.canceladas.length;
+  preencherLista(listas.canceladas, resumo.canceladas, (assinatura) =>
+    `${assinatura.nome}: ${formatoReais.format(assinatura.valor)} ${PERIODO_DO_CICLO[assinatura.ciclo]}`);
+}
+
+// Formulários -----------------------------------------------------------------
 
 // Liga um formulário a uma ação: trava o botão enquanto espera a resposta e,
 // se der errado, mostra o erro dentro do próprio formulário sem apagar o que
@@ -121,7 +195,7 @@ function ligarFormulario(seletor, acao) {
 
 ligarFormulario('#form-entrar', async (dados) => {
   await entrar(dados.get('email'), dados.get('senha'));
-  // A troca para a tela inicial acontece em acompanharSessao, logo abaixo.
+  // A troca para a tela inicial acontece em acompanharSessao, no fim do arquivo.
 });
 
 ligarFormulario('#form-criar-conta', async (dados, formulario) => {
@@ -153,7 +227,9 @@ ligarFormulario('#form-nova-senha', async (dados, formulario) => {
   mostrarAviso('Senha alterada.');
 });
 
-ligarFormulario('#form-nova-assinatura', async (dados, formulario) => {
+const formularioAssinatura = document.querySelector('#form-assinatura');
+
+ligarFormulario('#form-assinatura', async (dados, formulario) => {
   await criarAssinatura({
     nome: dados.get('nome').trim(),
     valor: Number(dados.get('valor')),
@@ -164,9 +240,20 @@ ligarFormulario('#form-nova-assinatura', async (dados, formulario) => {
 
   // Só limpa o formulário depois de salvar. Se der erro, o que foi digitado fica.
   formulario.reset();
-  // Relê do banco em vez de só acrescentar na tela: assim a lista mostra o que
+  mostrarTela('inicio');
+  mostrarAviso('Assinatura salva.');
+  // Relê do banco em vez de só acrescentar na tela: assim a tela mostra o que
   // realmente ficou gravado.
-  await carregarLista();
+  await carregarInicio();
+});
+
+// Botões ------------------------------------------------------------------------
+
+document.querySelector('#botao-adicionar').addEventListener('click', () => {
+  formularioAssinatura.reset();
+  formularioAssinatura.querySelector('.erro').textContent = '';
+  mostrarAviso('');
+  mostrarTela('formulario');
 });
 
 for (const botao of document.querySelectorAll('[data-ir-para]')) {
@@ -185,6 +272,8 @@ document.querySelector('#botao-sair').addEventListener('click', async () => {
     mostrarAviso(mensagemDeErro(falha));
   }
 });
+
+// Sessão ------------------------------------------------------------------------
 
 const erroDoLink = erroNoLinkRecebido();
 if (erroDoLink) {
@@ -212,7 +301,10 @@ acompanharSessao((evento, sessao) => {
     definindoNovaSenha = false;
     // Apaga da página as assinaturas de quem saiu, para a próxima pessoa que
     // usar este navegador não ver nada que não é dela.
-    limparLista();
+    limparInicio();
+    // Só ao sair de fato: ao abrir o app sem sessão, pode haver um aviso que
+    // precisa continuar visível (como o de link vencido).
+    if (evento === 'SIGNED_OUT') mostrarAviso('');
     mostrarTela('entrar');
   } else if (definindoNovaSenha) {
     mostrarTela('novaSenha');
