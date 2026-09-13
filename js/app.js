@@ -68,8 +68,11 @@ async function comBotaoTravado(botao, mostrarErro, acao) {
 // Tela inicial ----------------------------------------------------------------
 
 const formatoReais = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+// Sem "R$": para os números grandes, que já dizem "reais" na legenda.
+const formatoNumero = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const estadoInicio = document.querySelector('#estado-inicio');
+const destaqueChegando = document.querySelector('#destaque-chegando');
 const botaoTentarDeNovo = document.querySelector('#botao-tentar-de-novo');
 const inicioVazio = document.querySelector('#inicio-vazio');
 const inicioConteudo = document.querySelector('#inicio-conteudo');
@@ -83,6 +86,11 @@ const listas = {
 };
 
 const PERIODO_DO_CICLO = { mensal: 'por mês', trimestral: 'por trimestre', anual: 'por ano' };
+const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
+// "# set 2026" no topo, como as etiquetas de cor da referência visual.
+const [anoAtual, mesAtual] = dataDeHoje().split('-');
+document.querySelector('#mes-atual').textContent = `# ${MESES[Number(mesAtual) - 1]} ${anoAtual}`;
 
 // Conta as cargas da tela inicial. Se uma resposta antiga chegar depois de uma
 // nova, ou depois de a pessoa sair, ela é descartada em vez de aparecer na tela.
@@ -107,34 +115,105 @@ function quandoCobra(dias) {
   return `em ${dias} dias`;
 }
 
-// Mensal mostra só o valor. Trimestral e anual mostram o equivalente mensal,
-// marcado como tal, e o valor realmente cobrado.
-function textoDoValorMensal(assinatura) {
-  const porMes = `${formatoReais.format(assinatura.valorMensal)} por mês`;
-  if (assinatura.ciclo === 'mensal') return porMes;
-
-  const cobrado = `${formatoReais.format(assinatura.valor)} ${PERIODO_DO_CICLO[assinatura.ciclo]}`;
-  return `${porMes}, equivalente a ${cobrado}`;
+// Cria um elemento com classe e conteúdo. O conteúdo entra sempre como texto,
+// nunca como HTML: um nome como "<b>teste</b>" aparece escrito, sem virar código.
+function criar(tag, classe, ...conteudo) {
+  const elemento = document.createElement(tag);
+  if (classe) elemento.className = classe;
+  elemento.append(...conteudo);
+  return elemento;
 }
 
-// Troca o conteúdo de uma lista: um item por assinatura, com o texto e, se
-// houver, botões de ação (cada um com um texto e o que fazer ao clicar).
-function preencherLista(lista, assinaturas, textoDoItem, botoes = []) {
-  const itens = assinaturas.map((assinatura) => {
-    const item = document.createElement('li');
-    // textContent: um nome como "<b>teste</b>" aparece escrito, sem virar código.
-    item.append(textoDoItem(assinatura));
+function criarValor(numero, sufixo = '') {
+  const valor = criar('span', 'linha-valor', formatoNumero.format(numero));
+  if (sufixo) valor.append(criar('small', '', sufixo));
+  return valor;
+}
 
-    for (const { texto, aoClicar } of botoes) {
-      const botao = document.createElement('button');
+// Uma linha de lista: nome, detalhe embaixo, valor à direita e botões de ação
+// (cada um com um texto e o que fazer ao clicar).
+function criarLinha(assinatura, { detalhe = '', valor = null, botoes = [] } = {}) {
+  const texto = criar('span', 'linha-texto', criar('span', 'linha-nome', assinatura.nome));
+  if (detalhe) texto.append(criar('span', 'linha-detalhe', detalhe));
+
+  const linha = criar('li', 'linha', texto);
+  if (valor) linha.append(valor);
+
+  if (botoes.length > 0) {
+    const grupo = criar('span', 'linha-botoes');
+    for (const { texto: rotulo, aoClicar } of botoes) {
+      const botao = criar('button', 'botao-mini', rotulo);
       botao.type = 'button';
-      botao.textContent = texto;
+      // Para leitor de tela: "Editar Netflix", e não só "Editar".
+      botao.setAttribute('aria-label', `${rotulo} ${assinatura.nome}`);
       botao.addEventListener('click', () => aoClicar(assinatura, botao));
-      item.append(' ', botao);
+      grupo.append(botao);
     }
-    return item;
-  });
-  lista.replaceChildren(...itens);
+    linha.append(grupo);
+  }
+  return linha;
+}
+
+// Bloco grande de "Chegando", com o número de dias em destaque (como o "04"
+// da referência). A primeira cobrança vem em verde; a segunda, em branco.
+function criarCobrancaEmDestaque(assinatura, principal) {
+  const dias = assinatura.diasAteCobranca;
+  const numero = dias === 0 ? 'hoje' : String(dias).padStart(2, '0');
+  const legenda = dias === 0 ? 'cobrança' : dias === 1 ? 'dia · amanhã' : 'dias';
+
+  return criar(
+    'article',
+    `painel cobranca ${principal ? 'painel-verde cobranca-principal' : 'painel-branco'}`,
+    criar('p', 'cobranca-rotulo', principal ? 'próxima cobrança' : 'depois'),
+    criar('p', dias === 0 ? 'cobranca-dias cobranca-dias-palavra' : 'cobranca-dias', numero),
+    criar(
+      'p',
+      'cobranca-info',
+      `${legenda} · ${formatarDiaEMes(assinatura.dataDaCobranca)}`,
+      criar('br', ''),
+      assinatura.nome,
+      criar('br', ''),
+      formatoReais.format(assinatura.valor),
+    ),
+  );
+}
+
+// Largura, em "letras" (em), de cada caractere do total na fonte Montserrat
+// 800, medida no navegador. Usa a do algarismo mais largo ("4") para todos, e
+// assim o cálculo nunca subestima o espaço, seja qual for o número.
+const LARGURA_DO_ALGARISMO = 0.66;
+const LARGURA_DO_SEPARADOR = 0.24;
+
+// Mostra o total e informa ao CSS quanto ele ocupa, para a letra diminuir
+// quando o número for longo (ver .numero-total no estilo.css).
+function mostrarTotal(texto) {
+  const numeroTotal = document.querySelector('#total-mensal');
+  const algarismos = texto.replace(/\D/g, '').length;
+  const separadores = texto.length - algarismos;
+
+  numeroTotal.textContent = texto;
+  numeroTotal.style.setProperty(
+    '--largura-do-total',
+    algarismos * LARGURA_DO_ALGARISMO + separadores * LARGURA_DO_SEPARADOR,
+  );
+}
+
+function mostrarChegando(chegando) {
+  destaqueChegando.hidden = chegando.length === 0;
+  destaqueChegando.replaceChildren(
+    ...chegando.slice(0, 2).map((assinatura, posicao) => criarCobrancaEmDestaque(assinatura, posicao === 0)),
+  );
+
+  listas.chegando.replaceChildren(
+    ...chegando.slice(2).map((assinatura) =>
+      criarLinha(assinatura, {
+        detalhe: `${quandoCobra(assinatura.diasAteCobranca)} · ${formatarDiaEMes(assinatura.dataDaCobranca)}`,
+        // Com "R$", igual aos blocos grandes logo acima.
+        valor: criar('span', 'linha-valor', formatoReais.format(assinatura.valor)),
+      })),
+  );
+
+  document.querySelector('#chegando-vazio').hidden = chegando.length > 0;
 }
 
 function limparInicio() {
@@ -145,6 +224,7 @@ function limparInicio() {
   inicioConteudo.hidden = true;
   blocoCanceladas.hidden = true;
   blocoComProblema.hidden = true;
+  destaqueChegando.replaceChildren();
   for (const lista of Object.values(listas)) {
     lista.replaceChildren();
   }
@@ -195,37 +275,44 @@ function mostrarResumo(resumo, quantidadeTotal) {
   inicioConteudo.hidden = quantidadeTotal === 0;
 
   blocoComProblema.hidden = resumo.comProblema.length === 0;
-  preencherLista(
-    listas.comProblema,
-    resumo.comProblema,
-    (assinatura) => `${assinatura.nome}: data gravada ${formatarDataCompleta(assinatura.proxima_cobranca)}`,
-    [{ ...botaoEditar, texto: 'Corrigir' }],
+  listas.comProblema.replaceChildren(
+    ...resumo.comProblema.map((assinatura) =>
+      criarLinha(assinatura, {
+        detalhe: `data gravada ${formatarDataCompleta(assinatura.proxima_cobranca)}`,
+        botoes: [{ ...botaoEditar, texto: 'Corrigir' }],
+      })),
   );
 
-  document.querySelector('#total-mensal').textContent = formatoReais.format(resumo.totalMensal);
+  mostrarTotal(formatoNumero.format(resumo.totalMensal));
   document.querySelector('#quantidade-ativas').textContent =
-    resumo.quantidadeAtivas === 1 ? '1 assinatura ativa' : `${resumo.quantidadeAtivas} assinaturas ativas`;
+    resumo.quantidadeAtivas === 1 ? '1 ativa' : `${resumo.quantidadeAtivas} ativas`;
 
-  preencherLista(listas.chegando, resumo.chegando, (assinatura) =>
-    `${assinatura.nome}: ${quandoCobra(assinatura.diasAteCobranca)} ` +
-    `(${formatarDiaEMes(assinatura.dataDaCobranca)}), ${formatoReais.format(assinatura.valor)}`);
-  document.querySelector('#chegando-vazio').hidden = resumo.chegando.length > 0;
+  mostrarChegando(resumo.chegando);
 
-  preencherLista(
-    listas.ativas,
-    resumo.ativas,
-    (assinatura) => `${assinatura.nome}: ${textoDoValorMensal(assinatura)}`,
-    [botaoEditar],
+  // Mensal mostra o próprio valor. Trimestral e anual mostram o equivalente
+  // mensal à direita, marcado com "/mês", e o valor realmente cobrado embaixo.
+  listas.ativas.replaceChildren(
+    ...resumo.ativas.map((assinatura) => {
+      const cobrado = assinatura.ciclo === 'mensal'
+        ? ''
+        : `${formatoReais.format(assinatura.valor)} ${PERIODO_DO_CICLO[assinatura.ciclo]}`;
+      return criarLinha(assinatura, {
+        detalhe: [cobrado, assinatura.categoria].filter(Boolean).join(' · '),
+        valor: criarValor(assinatura.valorMensal, '/mês'),
+        botoes: [botaoEditar],
+      });
+    }),
   );
   document.querySelector('#ativas-vazio').hidden = resumo.ativas.length > 0;
 
   blocoCanceladas.hidden = resumo.canceladas.length === 0;
   document.querySelector('#quantidade-canceladas').textContent = resumo.canceladas.length;
-  preencherLista(
-    listas.canceladas,
-    resumo.canceladas,
-    (assinatura) => `${assinatura.nome}: ${formatoReais.format(assinatura.valor)} ${PERIODO_DO_CICLO[assinatura.ciclo]}`,
-    [botaoReativar, botaoEditar],
+  listas.canceladas.replaceChildren(
+    ...resumo.canceladas.map((assinatura) =>
+      criarLinha(assinatura, {
+        detalhe: `${formatoReais.format(assinatura.valor)} ${PERIODO_DO_CICLO[assinatura.ciclo]}`,
+        botoes: [botaoReativar, botaoEditar],
+      })),
   );
 }
 
@@ -416,7 +503,11 @@ ligarFormulario('#form-nova-senha', async (dados, formulario) => {
 
 // Botões de navegação -------------------------------------------------------------
 
-document.querySelector('#botao-adicionar').addEventListener('click', () => abrirFormulario());
+// Dois botões de adicionar: o preso ao pé da tela (celular) e o do cartaz do
+// total (computador). O CSS mostra só um de cada vez.
+for (const botao of document.querySelectorAll('[data-acao="adicionar"]')) {
+  botao.addEventListener('click', () => abrirFormulario());
+}
 
 for (const botao of document.querySelectorAll('[data-ir-para]')) {
   botao.addEventListener('click', () => {

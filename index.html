@@ -2,12 +2,13 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
   <!-- Política de segurança: diz ao navegador de onde a página pode carregar
        código e com quem pode conversar. Se alguém conseguir injetar um script
        na página, ele não roda e não consegue mandar dados para outro servidor.
-       Ao adicionar fontes ou imagens externas no Passo 9, liberar aqui. -->
+       As fontes ficam no próprio projeto (pasta fontes/), então nada externo
+       precisou ser liberado para o visual. -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
     script-src 'self' https://cdn.jsdelivr.net;
@@ -18,26 +19,38 @@
     base-uri 'self';
     form-action 'self'">
 
+  <!-- Cor da barra do navegador no celular, igual ao fundo do app -->
+  <meta name="theme-color" content="#ededed">
+
   <title>Assinaturas</title>
+  <link rel="icon" href="icone.svg" type="image/svg+xml">
+  <link rel="preload" href="fontes/montserrat-800.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/estilo.css">
 </head>
 <body>
   <main id="app">
-    <h1>Assinaturas</h1>
+    <header class="topo">
+      <h1 class="marca">assinaturas</h1>
+      <span class="topo-data" id="mes-atual"></span>
+    </header>
 
     <!-- Mensagens gerais, como "enviamos um link para o seu e-mail" -->
-    <p id="aviso" role="status" hidden></p>
+    <p id="aviso" class="aviso" role="status" hidden></p>
 
     <!-- Visível até o app descobrir se existe sessão, para nunca ficar em branco -->
-    <p id="tela-carregando">Carregando...</p>
+    <p id="tela-carregando" class="carregando">Carregando...</p>
 
     <!-- Todos os formulários usam method="post". O JavaScript cuida do envio,
          mas, se ele falhar, isso impede que e-mail e senha apareçam no
          endereço da página e fiquem gravados no histórico do navegador. -->
 
-    <section id="tela-entrar" hidden>
-      <h2>Entrar</h2>
-      <form id="form-entrar" method="post">
+    <section id="tela-entrar" class="tela tela-estreita" hidden>
+      <div class="painel painel-cinza cartaz">
+        <span class="pilula">sua conta</span>
+        <h2 class="titulo-cartaz">Entrar</h2>
+        <p class="cartaz-sub">Quanto suas assinaturas custam por mês, e o que vem por aí.</p>
+      </div>
+      <form id="form-entrar" class="painel painel-branco formulario" method="post">
         <label>E-mail
           <input type="email" name="email" autocomplete="email" required>
         </label>
@@ -45,15 +58,20 @@
           <input type="password" name="senha" autocomplete="current-password" required>
         </label>
         <p class="erro" role="alert"></p>
-        <button type="submit">Entrar</button>
+        <button type="submit" class="botao botao-largo">Entrar</button>
       </form>
-      <button type="button" data-ir-para="criarConta">Não tenho conta</button>
-      <button type="button" data-ir-para="pedirNovaSenha">Esqueci a senha</button>
+      <div class="acoes-secundarias">
+        <button type="button" class="botao-texto" data-ir-para="criarConta">Não tenho conta</button>
+        <button type="button" class="botao-texto" data-ir-para="pedirNovaSenha">Esqueci a senha</button>
+      </div>
     </section>
 
-    <section id="tela-criar-conta" hidden>
-      <h2>Criar conta</h2>
-      <form id="form-criar-conta" method="post">
+    <section id="tela-criar-conta" class="tela tela-estreita" hidden>
+      <div class="painel painel-cinza cartaz">
+        <span class="pilula">nova conta</span>
+        <h2 class="titulo-cartaz">Criar conta</h2>
+      </div>
+      <form id="form-criar-conta" class="painel painel-branco formulario" method="post">
         <label>E-mail
           <input type="email" name="email" autocomplete="email" required>
         </label>
@@ -61,92 +79,125 @@
           <input type="password" name="senha" autocomplete="new-password" minlength="8" required>
         </label>
         <p class="erro" role="alert"></p>
-        <button type="submit">Criar conta</button>
+        <button type="submit" class="botao botao-largo">Criar conta</button>
       </form>
-      <button type="button" data-ir-para="entrar">Já tenho conta</button>
+      <div class="acoes-secundarias">
+        <button type="button" class="botao-texto" data-ir-para="entrar">Já tenho conta</button>
+      </div>
     </section>
 
-    <section id="tela-pedir-nova-senha" hidden>
-      <h2>Esqueci a senha</h2>
-      <form id="form-pedir-nova-senha" method="post">
+    <section id="tela-pedir-nova-senha" class="tela tela-estreita" hidden>
+      <div class="painel painel-cinza cartaz">
+        <span class="pilula">acesso</span>
+        <h2 class="titulo-cartaz">Esqueci a senha</h2>
+      </div>
+      <form id="form-pedir-nova-senha" class="painel painel-branco formulario" method="post">
         <label>E-mail da conta
           <input type="email" name="email" autocomplete="email" required>
         </label>
         <p class="erro" role="alert"></p>
-        <button type="submit">Enviar link para criar nova senha</button>
+        <button type="submit" class="botao botao-largo">Enviar link para criar nova senha</button>
       </form>
-      <button type="button" data-ir-para="entrar">Voltar</button>
+      <div class="acoes-secundarias">
+        <button type="button" class="botao-texto" data-ir-para="entrar">Voltar</button>
+      </div>
     </section>
 
-    <section id="tela-nova-senha" hidden>
-      <h2>Criar nova senha</h2>
-      <form id="form-nova-senha" method="post">
+    <section id="tela-nova-senha" class="tela tela-estreita" hidden>
+      <div class="painel painel-cinza cartaz">
+        <span class="pilula">acesso</span>
+        <h2 class="titulo-cartaz">Nova senha</h2>
+      </div>
+      <form id="form-nova-senha" class="painel painel-branco formulario" method="post">
         <label>Nova senha (mínimo de 8 caracteres)
           <input type="password" name="senha" autocomplete="new-password" minlength="8" required>
         </label>
         <p class="erro" role="alert"></p>
-        <button type="submit">Salvar nova senha</button>
+        <button type="submit" class="botao botao-largo">Salvar nova senha</button>
       </form>
     </section>
 
-    <section id="tela-inicio" hidden>
-      <p>
-        Você entrou como <strong id="email-usuario"></strong>.
-        <button type="button" id="botao-sair">Sair</button>
-      </p>
+    <section id="tela-inicio" class="tela" hidden>
+      <div class="barra-usuario">
+        <strong id="email-usuario"></strong>
+        <button type="button" id="botao-sair" class="botao-texto">Sair</button>
+      </div>
 
       <!-- "Carregando..." ou aviso de erro ao buscar as assinaturas -->
-      <p id="estado-inicio" role="status"></p>
-      <p><button type="button" id="botao-tentar-de-novo" hidden>Tentar de novo</button></p>
+      <p id="estado-inicio" class="estado" role="status"></p>
+      <button type="button" id="botao-tentar-de-novo" class="botao botao-contorno" hidden>Tentar de novo</button>
 
       <!-- Primeira visita, sem nenhuma assinatura: orientar em vez de mostrar zero -->
-      <div id="inicio-vazio" hidden>
-        <h2>Nenhuma assinatura por aqui ainda</h2>
-        <p>
+      <div id="inicio-vazio" class="painel painel-cinza cartaz" hidden>
+        <span class="pilula">começando</span>
+        <h2 class="titulo-cartaz">Nenhuma assinatura por aqui ainda</h2>
+        <p class="cartaz-sub">
           Cadastre as cobranças que se repetem, como streaming, academia ou
           armazenamento na nuvem. O app soma quanto elas custam por mês e mostra
           o que vai ser cobrado em seguida.
         </p>
       </div>
 
-      <div id="inicio-conteudo" hidden>
+      <div id="inicio-conteudo" class="inicio-grade" hidden>
         <!-- Assinaturas com dado que não dá para calcular: apontadas, e não somadas -->
-        <div id="bloco-com-problema" role="alert" hidden>
-          <p><strong>Atenção:</strong> estas assinaturas têm uma data que o app não
-          consegue entender e ficaram fora do total. Corrija a data para elas voltarem a contar.</p>
-          <ul id="lista-com-problema"></ul>
+        <div id="bloco-com-problema" class="painel painel-alerta" role="alert" hidden>
+          <p class="titulo-painel">Atenção</p>
+          <p>Estas assinaturas têm uma data que o app não consegue entender e
+          ficaram fora do total. Corrija a data para elas voltarem a contar.</p>
+          <ul id="lista-com-problema" class="lista"></ul>
         </div>
 
-        <h2>Total do mês</h2>
-        <p><strong id="total-mensal"></strong></p>
-        <p id="quantidade-ativas"></p>
+        <!-- No celular os blocos ficam um embaixo do outro, na ordem da spec.
+             No computador, como no pôster de referência: o total ocupa a
+             largura toda em cima, e embaixo ficam as cobranças à esquerda e a
+             lista à direita. -->
+        <div class="painel painel-cinza cartaz cartaz-total">
+          <h2 class="pilula">total do mês</h2>
+          <p class="numero-total" id="total-mensal"></p>
+          <p class="legenda-total">reais por mês<br><span id="quantidade-ativas"></span></p>
+          <!-- Só aparece no computador; no celular o botão fica preso no pé da tela -->
+          <button type="button" class="botao botao-no-cartaz" data-acao="adicionar">+ adicionar assinatura</button>
+        </div>
 
-        <h2>Chegando</h2>
-        <p>Cobranças dos próximos 30 dias.</p>
-        <ul id="lista-chegando"></ul>
-        <p id="chegando-vazio" hidden>Nenhuma cobrança nos próximos 30 dias.</p>
+        <section class="coluna" aria-labelledby="titulo-chegando">
+          <h2 id="titulo-chegando" class="rotulo">chegando · próximos 30 dias</h2>
+          <!-- As duas próximas cobranças em blocos grandes; as outras em linhas -->
+          <div id="destaque-chegando" class="chegando-destaque"></div>
+          <ul id="lista-chegando" class="lista lista-chegando"></ul>
+          <p id="chegando-vazio" class="painel painel-branco" hidden>Nenhuma cobrança nos próximos 30 dias.</p>
+        </section>
 
-        <h2>Todas</h2>
-        <ul id="lista-ativas"></ul>
-        <p id="ativas-vazio" hidden>Nenhuma assinatura ativa.</p>
+        <div class="coluna">
+          <section class="painel painel-branco" aria-labelledby="titulo-todas">
+            <h2 id="titulo-todas" class="titulo-painel">todas</h2>
+            <ul id="lista-ativas" class="lista"></ul>
+            <p id="ativas-vazio" hidden>Nenhuma assinatura ativa.</p>
+          </section>
+
+          <!-- Controle discreto: as canceladas continuam alcançáveis, mas não atrapalham -->
+          <details id="bloco-canceladas" class="painel painel-branco canceladas" hidden>
+            <summary>Ver canceladas (<span id="quantidade-canceladas"></span>)</summary>
+            <ul id="lista-canceladas" class="lista"></ul>
+          </details>
+        </div>
       </div>
 
-      <p><button type="button" id="botao-adicionar">Adicionar assinatura</button></p>
-
-      <!-- Controle discreto: as canceladas continuam alcançáveis, mas não atrapalham -->
-      <details id="bloco-canceladas" hidden>
-        <summary>Ver canceladas (<span id="quantidade-canceladas"></span>)</summary>
-        <ul id="lista-canceladas"></ul>
-      </details>
+      <div class="barra-acao">
+        <button type="button" class="botao botao-largo" data-acao="adicionar">+ adicionar assinatura</button>
+      </div>
     </section>
 
-    <section id="tela-formulario" hidden>
-      <h2 id="titulo-formulario">Nova assinatura</h2>
+    <section id="tela-formulario" class="tela tela-estreita" hidden>
+      <div class="painel painel-cinza cartaz">
+        <span class="pilula">assinatura</span>
+        <h2 id="titulo-formulario" class="titulo-cartaz">Nova assinatura</h2>
+      </div>
+
       <!-- novalidate: quem confere é o validacao.js, que mostra a mensagem
            embaixo do campo com problema, em vez do balão do navegador, que
            some sozinho. Cada mensagem fica ligada ao campo por aria-describedby,
            para leitores de tela anunciarem o erro junto com o campo. -->
-      <form id="form-assinatura" method="post" novalidate>
+      <form id="form-assinatura" class="painel painel-branco formulario" method="post" novalidate>
         <label>Nome
           <input name="nome" required maxlength="100" placeholder="Netflix"
                  aria-describedby="erro-campo-nome">
@@ -183,19 +234,21 @@
         <p class="erro-campo" id="erro-campo-categoria"></p>
 
         <p class="erro" role="alert"></p>
-        <button type="submit">Salvar</button>
+        <button type="submit" class="botao botao-largo">Salvar</button>
       </form>
 
       <!-- Só na edição. Os erros destes botões aparecem no mesmo lugar dos
            erros do formulário. -->
-      <div id="acoes-edicao" hidden>
+      <div id="acoes-edicao" class="painel painel-verde acoes-edicao" hidden>
         <h3>Outras ações</h3>
-        <button type="button" id="botao-alternar-ativa">Marcar como cancelada</button>
-        <button type="button" id="botao-apagar">Apagar de vez</button>
+        <button type="button" id="botao-alternar-ativa" class="botao botao-contorno">Marcar como cancelada</button>
+        <button type="button" id="botao-apagar" class="botao botao-perigo">Apagar de vez</button>
       </div>
 
       <!-- "Voltar", e não "Cancelar", para não confundir com cancelar a assinatura -->
-      <p><button type="button" data-ir-para="inicio">Voltar</button></p>
+      <div class="acoes-secundarias">
+        <button type="button" class="botao-texto" data-ir-para="inicio">Voltar</button>
+      </div>
     </section>
   </main>
 

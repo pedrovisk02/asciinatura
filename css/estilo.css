@@ -1,22 +1,689 @@
-/* Estilo do aplicativo.
-   O visual de verdade vem no Passo 9. Até lá, só o mínimo para usar. */
+/* Estilo do aplicativo: direção "pôster" (Passo 9).
+   Referência escolhida pelo Pedro: cartaz "cold color matching", com tons
+   frios, blocos grandes de cantos bem arredondados, letra geométrica pesada
+   e números enormes. Pensado primeiro para o celular; o computador ganha
+   duas colunas no fim do arquivo. */
 
-label {
-  display: block;
-  margin-block: 0.5rem;
+/* Fontes ---------------------------------------------------------------------
+   Guardadas no próprio projeto (pasta fontes/), e não carregadas do Google:
+   o app não depende de outro site e a política de segurança continua fechada.
+   Montserrat, licença SIL Open Font License (fontes/LICENCA-MONTSERRAT.txt). */
+
+@font-face {
+  font-family: 'Montserrat';
+  src: url('../fontes/montserrat-500.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
 }
 
-/* Mensagens de erro precisam chamar atenção desde já (Passo 8). */
+@font-face {
+  font-family: 'Montserrat';
+  src: url('../fontes/montserrat-700.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Montserrat';
+  src: url('../fontes/montserrat-800.woff2') format('woff2');
+  font-weight: 800;
+  font-display: swap;
+}
+
+/* Cores e medidas --------------------------------------------------------------
+   Paleta tirada da referência: #2B4239, #AFAFAF e #EDEDED, mais branco.
+   Contraste conferido (mínimo 4,5:1 para texto comum):
+   verde sobre cinza 4,9 | verde sobre claro 9,2 | cinza sobre verde 4,9
+   texto-suave sobre branco 6,3 | erro sobre branco 6,9 */
+
+:root {
+  --verde: #2b4239;
+  --cinza: #afafaf;
+  --claro: #ededed;
+  --branco: #ffffff;
+  --texto-suave: #5e6360;
+  --erro: #9a3b34;
+
+  --raio-painel: 28px;
+  --raio-campo: 16px;
+  --espaco: 12px;
+
+  --fonte: 'Montserrat', system-ui, sans-serif;
+}
+
+/* Base ------------------------------------------------------------------------ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* O atributo hidden sempre vence, mesmo em elementos com display: flex ou grid. */
+[hidden] {
+  display: none !important;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--claro);
+  color: var(--verde);
+  font-family: var(--fonte);
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+h1,
+h2,
+h3,
+p,
+ul {
+  margin: 0;
+}
+
+ul {
+  padding: 0;
+  list-style: none;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+/* Foco sempre visível para quem navega pelo teclado. */
+:focus-visible {
+  outline: 3px solid var(--verde);
+  outline-offset: 2px;
+}
+
+.painel-verde :focus-visible {
+  outline-color: var(--claro);
+}
+
+#app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: var(--espaco);
+  padding-bottom: 96px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco);
+  min-height: 100vh;
+}
+
+/* Topo ------------------------------------------------------------------------ */
+
+.topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 6px 8px 0;
+}
+
+.marca {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.topo-data {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--texto-suave);
+}
+
+.telas,
+.tela {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco);
+}
+
+/* Painéis: os blocos grandes da referência ------------------------------------- */
+
+.painel {
+  border-radius: var(--raio-painel);
+  padding: 18px;
+}
+
+.painel-cinza {
+  background: var(--cinza);
+}
+
+.painel-verde {
+  background: var(--verde);
+  color: var(--claro);
+}
+
+.painel-branco {
+  background: var(--branco);
+}
+
+.painel-alerta {
+  background: var(--branco);
+  border: 3px solid var(--erro);
+}
+
+/* Cartaz: painel cinza com o círculo claro da referência atrás do texto. */
+.cartaz {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  isolation: isolate;
+}
+
+.cartaz::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  background: var(--claro);
+  right: -48px;
+  top: 38px;
+}
+
+.titulo-cartaz {
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  margin-top: 8px;
+}
+
+.cartaz-sub {
+  font-weight: 700;
+  max-width: 24ch;
+}
+
+.pilula {
+  display: inline-block;
+  background: var(--verde);
+  color: var(--branco);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.rotulo {
+  font-size: 12px;
+  font-weight: 800;
+  padding: 4px 8px 0;
+}
+
+/* Mensagens -------------------------------------------------------------------- */
+
+.aviso {
+  background: var(--branco);
+  border-radius: var(--raio-campo);
+  padding: 12px 16px;
+  font-weight: 700;
+}
+
+.carregando,
+.estado {
+  padding: 8px;
+  font-weight: 700;
+}
+
+.estado:empty {
+  display: none;
+}
+
 .erro,
 .erro-campo {
-  color: #b00020;
+  color: var(--erro);
+  font-size: 14px;
+  font-weight: 700;
 }
 
-.erro-campo {
-  margin-block: 0 0.5rem;
-}
-
-.erro-campo:empty,
-.erro:empty {
+.erro:empty,
+.erro-campo:empty {
   display: none;
+}
+
+/* Botões ----------------------------------------------------------------------- */
+
+.botao {
+  min-height: 48px;
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 22px;
+  background: var(--verde);
+  color: var(--branco);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.painel-verde .botao {
+  background: var(--claro);
+  color: var(--verde);
+}
+
+.botao-largo {
+  width: 100%;
+}
+
+.botao-contorno {
+  background: transparent;
+  color: var(--verde);
+  border: 2px solid currentColor;
+}
+
+.painel-verde .botao-contorno {
+  background: transparent;
+  color: var(--claro);
+}
+
+.botao-perigo,
+.painel-verde .botao-perigo {
+  background: var(--branco);
+  color: var(--erro);
+  border: 2px solid var(--erro);
+}
+
+.botao-texto {
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  padding: 8px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.botao-mini {
+  min-height: 40px;
+  border: 2px solid var(--verde);
+  border-radius: 999px;
+  background: transparent;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.acoes-secundarias {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 16px;
+}
+
+/* Botão de adicionar preso ao pé da tela no celular, como em um app. */
+.barra-acao {
+  position: sticky;
+  bottom: var(--espaco);
+  z-index: 1;
+}
+
+.barra-acao .botao {
+  box-shadow: 0 0 0 6px var(--claro);
+}
+
+/* Formulários ------------------------------------------------------------------ */
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 800;
+  margin-top: 8px;
+}
+
+input,
+select {
+  min-height: 48px;
+  width: 100%;
+  border: 2px solid var(--claro);
+  border-radius: var(--raio-campo);
+  background: var(--claro);
+  padding: 10px 14px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+input:focus,
+select:focus {
+  border-color: var(--verde);
+  background: var(--branco);
+  outline: none;
+}
+
+input[aria-invalid='true'],
+select[aria-invalid='true'] {
+  border-color: var(--erro);
+}
+
+input::placeholder {
+  color: var(--texto-suave);
+}
+
+.formulario .botao {
+  margin-top: 14px;
+}
+
+/* Tela inicial ------------------------------------------------------------------ */
+
+.barra-usuario {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 0 0 0 8px;
+  font-size: 13px;
+  color: var(--texto-suave);
+}
+
+.barra-usuario strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.inicio-grade {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco);
+}
+
+.cartaz-total {
+  min-height: 230px;
+  /* Permite medir a largura do próprio bloco (unidade cqi, logo abaixo). */
+  container-type: inline-size;
+  --tamanho-maximo-do-total: 88px;
+}
+
+/* O total diminui sozinho quando é longo, para nunca sair do bloco.
+   --largura-do-total é a largura do texto medida em "letras" (em), calculada
+   pelo app.js a partir dos algarismos e separadores; 100cqi é a largura do
+   bloco. O menor dos dois tamanhos vence. */
+.numero-total {
+  font-size: min(var(--tamanho-maximo-do-total), calc(100cqi / var(--largura-do-total, 4)));
+  font-weight: 800;
+  white-space: nowrap;
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+  margin-top: 6px;
+}
+
+.legenda-total {
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+/* Botão de adicionar dentro do cartaz: só no computador (ver fim do arquivo). */
+.botao-no-cartaz {
+  display: none;
+}
+
+.coluna {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco);
+}
+
+/* Chegando: as duas próximas cobranças viram blocos com o número de dias
+   gigante, como o "04" da referência; as demais ficam em linhas. */
+.chegando-destaque {
+  display: flex;
+  gap: var(--espaco);
+}
+
+.cobranca {
+  flex: 1;
+  min-width: 0;
+  min-height: 170px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.cobranca-principal {
+  flex: 1.2;
+}
+
+.cobranca-rotulo {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.cobranca-dias {
+  font-size: 64px;
+  font-weight: 500;
+  line-height: 0.9;
+  letter-spacing: -0.06em;
+  font-variant-numeric: tabular-nums;
+}
+
+.painel-verde .cobranca-dias {
+  color: var(--cinza);
+}
+
+.painel-branco .cobranca-dias {
+  font-size: 48px;
+  color: var(--texto-suave);
+}
+
+.cobranca-dias-palavra {
+  font-size: 40px;
+}
+
+.cobranca-info {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.painel-verde .cobranca-info {
+  color: var(--branco);
+}
+
+/* Linhas das listas (todas, chegando, canceladas, com problema). */
+.lista {
+  display: flex;
+  flex-direction: column;
+}
+
+.linha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 2px solid var(--claro);
+}
+
+.linha:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.linha-texto {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.linha-nome {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.linha-detalhe {
+  font-size: 12px;
+  color: var(--texto-suave);
+}
+
+.linha-valor {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.linha-valor small {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--texto-suave);
+}
+
+.linha-botoes {
+  display: flex;
+  gap: 6px;
+}
+
+.lista-chegando {
+  background: var(--branco);
+  border-radius: var(--raio-painel);
+  padding: 6px 18px 14px;
+}
+
+.lista-chegando:empty {
+  display: none;
+}
+
+.titulo-painel {
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+
+/* "Ver canceladas": discreto, no fim. */
+.canceladas summary {
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 14px;
+  min-height: 24px;
+}
+
+.canceladas[open] summary {
+  margin-bottom: 4px;
+}
+
+/* Outras ações da edição. */
+.acoes-edicao {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.acoes-edicao h3 {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* Computador ---------------------------------------------------------------------
+   Como no pôster de referência: total de ponta a ponta em cima, com o botão de
+   adicionar no canto; embaixo, cobranças à esquerda e lista à direita. */
+
+@media (min-width: 880px) {
+  #app {
+    max-width: 1040px;
+    padding: 24px;
+    gap: 16px;
+  }
+
+  .tela {
+    gap: 16px;
+  }
+
+  /* Telas de formulário ficam centralizadas e estreitas. */
+  .tela-estreita {
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .inicio-grade {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    align-items: start;
+    gap: 16px;
+  }
+
+  .inicio-grade .coluna {
+    gap: 16px;
+  }
+
+  /* O aviso de problema e o total ocupam as duas colunas. */
+  #bloco-com-problema,
+  .cartaz-total {
+    grid-column: 1 / -1;
+  }
+
+  .cartaz-total {
+    min-height: 260px;
+    padding: 24px 28px;
+    --tamanho-maximo-do-total: 136px;
+  }
+
+  /* Espaço para o número longo não encostar no botão do canto. */
+  .cartaz-total .numero-total {
+    margin-top: 28px;
+  }
+
+  /* Círculo maior, cortado pela borda de baixo, como no pôster. */
+  .cartaz-total::before {
+    width: 360px;
+    height: 360px;
+    right: 12%;
+    top: 70px;
+  }
+
+  .botao-no-cartaz {
+    display: block;
+    position: absolute;
+    top: 24px;
+    right: 28px;
+  }
+
+  .titulo-cartaz {
+    font-size: 52px;
+  }
+
+  /* Com o total na tela, o botão de adicionar já está no cartaz. O de baixo só
+     aparece quando não há total (lista vazia ou falha ao carregar). */
+  #inicio-conteudo:not([hidden]) ~ .barra-acao {
+    display: none;
+  }
+
+  .barra-acao {
+    position: static;
+    align-self: flex-start;
+  }
+
+  .barra-acao .botao {
+    box-shadow: none;
+  }
 }
