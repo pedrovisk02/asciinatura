@@ -90,8 +90,41 @@
     </section>
 
     <section id="tela-inicio" hidden>
-      <p>Você entrou como <strong id="email-usuario"></strong>.</p>
-      <button type="button" id="botao-sair">Sair</button>
+      <p>
+        Você entrou como <strong id="email-usuario"></strong>.
+        <button type="button" id="botao-sair">Sair</button>
+      </p>
+
+      <h2>Nova assinatura</h2>
+      <form id="form-nova-assinatura" method="post">
+        <!-- pattern exige ao menos um caractere que não seja espaço -->
+        <label>Nome
+          <input name="nome" required maxlength="100" pattern=".*\S.*" placeholder="Netflix">
+        </label>
+        <label>Valor cobrado por ciclo (R$)
+          <input name="valor" type="number" step="0.01" min="0.01" inputmode="decimal" required>
+        </label>
+        <label>Ciclo
+          <select name="ciclo" required>
+            <option value="mensal">Mensal</option>
+            <option value="trimestral">Trimestral</option>
+            <option value="anual">Anual</option>
+          </select>
+        </label>
+        <label>Próxima cobrança
+          <input name="proxima_cobranca" type="date" required>
+        </label>
+        <label>Categoria (opcional)
+          <input name="categoria" maxlength="50" placeholder="streaming">
+        </label>
+        <p class="erro" role="alert"></p>
+        <button type="submit">Salvar</button>
+      </form>
+
+      <!-- Listagem crua do Passo 5. A tela inicial de verdade vem no Passo 6. -->
+      <h2>Minhas assinaturas</h2>
+      <p id="estado-lista"></p>
+      <ul id="lista-assinaturas"></ul>
     </section>
   </main>
 
