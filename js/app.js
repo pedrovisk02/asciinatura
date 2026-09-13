@@ -10,13 +10,15 @@ import {
   erroNoLinkRecebido,
 } from './auth.js';
 import { listarAssinaturas, criarAssinatura, atualizarAssinatura, apagarAssinatura } from './dados.js';
-import { resumoDoInicio, dataDeHoje, dataParaGravarNaEdicao } from './calculos.js';
-import { validarAssinatura, valorParaOCampo } from './validacao.js';
+import { resumoDoInicio, dataDeHoje, dataParaGravarNaEdicao, valorMensalEquivalente } from './calculos.js';
+import { validarAssinatura, valorParaOCampo, lerValor } from './validacao.js';
+import { criarCalendario } from './calendario.js';
 import { mensagemDeErro, ehFalhaDeConexao, MENSAGEM_SEM_CONEXAO } from './erros.js';
 import { fecharAbertura } from './abertura.js';
 import { animarManchas, animarCirculo, reduzirMovimento } from './ascii.js';
 import { confirmarApagar } from './confirmacao.js';
 import { decifrarTextos, ligarInteracoes } from './interacoes.js';
+import { prepararDialogo } from './dialogos.js';
 
 const telas = {
   carregando: document.querySelector('#tela-carregando'),
@@ -70,7 +72,7 @@ function anunciar(texto) {
 }
 
 async function mostrarInicio(email) {
-  document.querySelector('#email-usuario').textContent = email;
+  document.querySelector('#conta-email').textContent = email;
   mostrarTela('inicio');
   await carregarInicio();
   // Com a lista pronta, a abertura sai e os blocos entram em sequência.
@@ -116,7 +118,7 @@ const listas = {
 };
 
 const PERIODO_DO_CICLO = { mensal: 'por mês', trimestral: 'por trimestre', anual: 'por ano' };
-const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 
 // Primeira letra maiúscula, para textos montados a partir de partes (como a
 // categoria que a pessoa digitou em minúsculas) começarem sempre em maiúscula.
@@ -124,9 +126,9 @@ function comPrimeiraMaiuscula(texto) {
   return texto.charAt(0).toLocaleUpperCase('pt-BR') + texto.slice(1);
 }
 
-// "# set 2026" no topo, como as etiquetas de cor da referência visual.
-const [anoAtual, mesAtual] = dataDeHoje().split('-');
-document.querySelector('#mes-atual').textContent = `# ${MESES[Number(mesAtual) - 1]} ${anoAtual}`;
+// A etiqueta do total diz de qual mês é o valor: "Total de setembro".
+const mesAtual = Number(dataDeHoje().split('-')[1]);
+document.querySelector('#titulo-total').textContent = `Total de ${MESES[mesAtual - 1]}`;
 
 // Conta as cargas da tela inicial. Se uma resposta antiga chegar depois de uma
 // nova, ou depois de a pessoa sair, ela é descartada em vez de aparecer na tela.
@@ -221,10 +223,12 @@ function criarCobrancaEmDestaque(assinatura, principal) {
 // assim o cálculo nunca subestima o espaço, seja qual for o número.
 const LARGURA_DO_ALGARISMO = 0.66;
 const LARGURA_DO_SEPARADOR = 0.24;
+// O "R$" pequeno antes do número, com o espaço até ele (ver .numero-total-moeda).
+const LARGURA_DA_MOEDA = 0.6;
 
 function larguraEmLetras(texto) {
   const algarismos = texto.replace(/\D/g, '').length;
-  return algarismos * LARGURA_DO_ALGARISMO + (texto.length - algarismos) * LARGURA_DO_SEPARADOR;
+  return LARGURA_DA_MOEDA + algarismos * LARGURA_DO_ALGARISMO + (texto.length - algarismos) * LARGURA_DO_SEPARADOR;
 }
 
 // O número que está no cartaz agora, para a próxima contagem partir dele.
@@ -243,7 +247,7 @@ function mostrarTotal(valor, contarDe = null) {
   // Durante a contagem o texto muda de tamanho: reserva espaço para o maior
   // dos dois, para o número nunca sair do bloco no meio do caminho.
   const textoInicial = contarDe === null ? textoFinal : formatoNumero.format(contarDe);
-  numeroTotal.style.setProperty('--largura-do-total', Math.max(larguraEmLetras(textoFinal), larguraEmLetras(textoInicial)));
+  numeroTotal.parentElement.style.setProperty('--largura-do-total', Math.max(larguraEmLetras(textoFinal), larguraEmLetras(textoInicial)));
 
   if (contarDe === null || contarDe === valor || reduzirMovimento()) {
     numeroTotal.textContent = textoFinal;
@@ -394,7 +398,7 @@ function mostrarResumo(resumo, quantidadeTotal, contarDe = null) {
 
   mostrarTotal(resumo.totalMensal, contarDe);
   document.querySelector('#quantidade-ativas').textContent =
-    resumo.quantidadeAtivas === 1 ? '1 ativa' : `${resumo.quantidadeAtivas} ativas`;
+    resumo.quantidadeAtivas === 1 ? '1 assinatura ativa' : `${resumo.quantidadeAtivas} assinaturas ativas`;
 
   mostrarChegando(resumo.chegando);
 
@@ -451,23 +455,60 @@ const CAMPOS_DO_FORMULARIO = {
   categoria: 'categoria',
 };
 
+// O calendário do app, no lugar do calendário do navegador.
+const calendario = criarCalendario({
+  gatilho: document.querySelector('#campo-data'),
+  textoDoGatilho: document.querySelector('#campo-data-texto'),
+  entrada: formularioAssinatura.elements.namedItem('proxima_cobranca'),
+  painel: document.querySelector('#calendario-data'),
+});
+
+// O elemento que representa cada campo na tela: é nele que ficam o aviso de
+// erro para leitores de tela (aria-invalid) e o foco. O ciclo são três botões
+// de rádio agrupados, e a data é o botão que abre o calendário.
+function elementoDoCampo(nomeDoCampo) {
+  if (nomeDoCampo === 'ciclo') return document.querySelector('#campo-ciclo');
+  if (nomeDoCampo === 'proxima_cobranca') return document.querySelector('#campo-data');
+  return formularioAssinatura.elements.namedItem(nomeDoCampo);
+}
+
+function focarCampo(nomeDoCampo) {
+  if (nomeDoCampo === 'ciclo') {
+    (formularioAssinatura.querySelector('[name="ciclo"]:checked') ?? formularioAssinatura.querySelector('[name="ciclo"]')).focus();
+  } else {
+    elementoDoCampo(nomeDoCampo).focus();
+  }
+}
+
 // Mostra cada mensagem embaixo do seu campo e marca o campo como inválido
 // (aria-invalid), o que leitores de tela anunciam.
 function mostrarErrosDosCampos(erros) {
   for (const [chave, nomeDoCampo] of Object.entries(CAMPOS_DO_FORMULARIO)) {
     const mensagem = erros[chave] ?? '';
     document.querySelector(`#erro-campo-${nomeDoCampo}`).textContent = mensagem;
-    formularioAssinatura.elements.namedItem(nomeDoCampo).setAttribute('aria-invalid', String(Boolean(mensagem)));
+    elementoDoCampo(nomeDoCampo).setAttribute('aria-invalid', String(Boolean(mensagem)));
   }
 }
 
 // Ao corrigir um campo, a mensagem dele some, sem esperar o próximo "Salvar".
-for (const nomeDoCampo of Object.values(CAMPOS_DO_FORMULARIO)) {
-  formularioAssinatura.elements.namedItem(nomeDoCampo).addEventListener('input', (evento) => {
-    document.querySelector(`#erro-campo-${nomeDoCampo}`).textContent = '';
-    evento.target.setAttribute('aria-invalid', 'false');
-  });
+// Um só ouvinte para o formulário todo: o evento diz qual campo mudou.
+formularioAssinatura.addEventListener('input', (evento) => {
+  const nomeDoCampo = evento.target.name;
+  if (!Object.values(CAMPOS_DO_FORMULARIO).includes(nomeDoCampo)) return;
+  document.querySelector(`#erro-campo-${nomeDoCampo}`).textContent = '';
+  elementoDoCampo(nomeDoCampo).setAttribute('aria-invalid', 'false');
+});
+
+// Cartões de ciclo: cada um mostra quanto o valor digitado pesa por mês.
+// Com o valor vazio ou inválido, a linha pequena some.
+function atualizarValoresPorMes() {
+  const { valor } = lerValor(formularioAssinatura.elements.namedItem('valor').value);
+  for (const legenda of formularioAssinatura.querySelectorAll('.opcao-por-mes')) {
+    legenda.textContent = valor ? `${formatoReais.format(valorMensalEquivalente(valor, legenda.dataset.ciclo))}/mês` : '';
+  }
 }
+
+formularioAssinatura.elements.namedItem('valor').addEventListener('input', atualizarValoresPorMes);
 
 function abrirFormulario(assinatura = null) {
   assinaturaEmEdicao = assinatura;
@@ -478,22 +519,25 @@ function abrirFormulario(assinatura = null) {
 
   document.querySelector('#titulo-formulario').textContent = assinatura ? 'Editar assinatura' : 'Nova assinatura';
   acoesEdicao.hidden = !assinatura;
+  calendario.definir('');
 
   if (assinatura) {
     const campo = (nome) => formularioAssinatura.elements.namedItem(nome);
     campo('nome').value = assinatura.nome;
     campo('valor').value = valorParaOCampo(assinatura.valor);
+    // Com os botões de rádio, dar o valor ao grupo marca o cartão certo.
     campo('ciclo').value = assinatura.ciclo;
     campo('categoria').value = assinatura.categoria ?? '';
 
     // Ativas mostram a próxima cobrança já avançada; canceladas e com problema,
     // a data gravada.
     dataMostradaNoFormulario = assinatura.dataDaCobranca ?? assinatura.proxima_cobranca;
-    campo('proxima_cobranca').value = dataMostradaNoFormulario;
+    calendario.definir(dataMostradaNoFormulario);
 
     botaoAlternarAtiva.textContent = assinatura.ativa ? 'Marcar como cancelada' : 'Reativar assinatura';
   }
 
+  atualizarValoresPorMes();
   mostrarTela('formulario');
 }
 
@@ -534,7 +578,7 @@ ligarFormulario('#form-assinatura', async (dados) => {
   if (!valido) {
     // Leva o cursor ao primeiro campo com problema. Nada é enviado ao banco.
     const primeiro = Object.keys(CAMPOS_DO_FORMULARIO).find((chave) => erros[chave]);
-    formularioAssinatura.elements.namedItem(CAMPOS_DO_FORMULARIO[primeiro]).focus();
+    focarCampo(CAMPOS_DO_FORMULARIO[primeiro]);
     return;
   }
 
@@ -634,7 +678,21 @@ for (const botao of document.querySelectorAll('[data-ir-para]')) {
   });
 }
 
+// Gaveta da conta ---------------------------------------------------------------
+
+const botaoConta = document.querySelector('#botao-conta');
+const dialogoConta = document.querySelector('#dialogo-conta');
+prepararDialogo(dialogoConta);
+
+botaoConta.addEventListener('click', () => {
+  dialogoConta.showModal();
+  decifrarTextos(dialogoConta);
+});
+
+document.querySelector('#botao-fechar-conta').addEventListener('click', () => dialogoConta.close());
+
 document.querySelector('#botao-sair').addEventListener('click', async () => {
+  dialogoConta.close();
   try {
     await sair();
     // A troca para a tela de entrar acontece em acompanharSessao.
@@ -686,6 +744,11 @@ acompanharSessao((evento, sessao) => {
   const usuario = sessao?.user.id ?? null;
   if (usuario === usuarioNaTela) return;
   usuarioNaTela = usuario;
+
+  // O botão da conta só existe para quem está conectado.
+  botaoConta.hidden = !sessao;
+  document.querySelector('#conta-email').textContent = sessao?.user.email ?? '';
+  if (!sessao && dialogoConta.open) dialogoConta.close();
 
   if (!sessao) {
     definindoNovaSenha = false;

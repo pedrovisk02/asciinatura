@@ -79,8 +79,12 @@ describe('validarAssinatura', () => {
     assert.equal(campos.categoria, 'streaming');
   });
 
-  test('data incompleta pede a data completa', () => {
-    assert.match(validarAssinatura({ ...valida, proximaCobranca: '' }).erros.proximaCobranca, /data completa/);
+  test('sem data escolhida pede para escolher a data', () => {
+    assert.equal(validarAssinatura({ ...valida, proximaCobranca: '' }).erros.proximaCobranca, 'Escolha a data da próxima cobrança.');
+  });
+
+  test('ciclo não escolhido (formulário devolve null) pede o ciclo', () => {
+    assert.equal(validarAssinatura({ ...valida, ciclo: null }).erros.ciclo, 'Escolha o ciclo.');
   });
 
   test('data com ano fora de 2000 a 2099 é recusada', () => {

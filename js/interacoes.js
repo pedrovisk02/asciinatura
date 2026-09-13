@@ -14,8 +14,8 @@ const ALGARISMOS = '0123456789';
 
 // Onde há texto para decifrar, em qualquer tela.
 const TEXTOS_DECIFRAVEIS = [
-  '.titulo-cartaz', '.cartaz-sub', '.pilula', 'label', '.botao', '.botao-mini', '.botao-texto',
-  '.numero-total', '.legenda-total', '.rotulo', '.titulo-painel',
+  '.titulo-cartaz', '.cartaz-sub', '.pilula', 'label', '.rotulo-campo', '.botao', '.botao-mini', '.botao-texto',
+  '.numero-total', '.rotulo', '.titulo-painel',
   '.cobranca-rotulo', '.cobranca-dias', '.cobranca-info',
   '.linha-nome', '.linha-detalhe', '.linha-valor',
   '.canceladas summary', '.acoes-edicao h3', '.dialogo-titulo', '.dialogo-texto',
@@ -152,7 +152,7 @@ function ligarMovimentoDoMouse() {
 
 // Onda ao clicar ----------------------------------------------------------------
 
-const COM_ONDA = '.botao, .botao-mini, .cartaz, .cobranca, .linha';
+const COM_ONDA = '.botao, .botao-mini, .cartaz, .cobranca, .linha, .opcao-ciclo, .campo-data';
 
 // Um círculo cresce a partir do ponto do clique ou do toque, na cor contrária
 // à do elemento: claro sobre o verde, verde sobre o claro.

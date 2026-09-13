@@ -61,7 +61,11 @@
         <img src="icone.svg" alt="" width="26" height="26">
         <span class="marca-nome"><span class="marca-ascii">Ascii</span>natura</span>
       </h1>
-      <span class="topo-data" id="mes-atual"></span>
+      <!-- Abre a gaveta da conta (e-mail e sair). Só aparece com alguém conectado. -->
+      <button type="button" id="botao-conta" class="botao-mini botao-com-icone" aria-haspopup="dialog" hidden>
+        <svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"/></svg>
+        Conta
+      </button>
     </header>
 
     <!-- Mensagens gerais, como "enviamos um link para o seu e-mail" -->
@@ -158,11 +162,6 @@
     </section>
 
     <section id="tela-inicio" class="tela" hidden>
-      <div class="barra-usuario">
-        <strong id="email-usuario"></strong>
-        <button type="button" id="botao-sair" class="botao-texto">Sair</button>
-      </div>
-
       <!-- Aviso de erro ao buscar as assinaturas -->
       <p id="estado-inicio" class="estado" role="status"></p>
       <button type="button" id="botao-tentar-de-novo" class="botao botao-contorno" hidden>Tentar de novo</button>
@@ -206,9 +205,10 @@
         <div class="painel painel-cinza cartaz cartaz-total">
           <!-- O círculo do cartaz, desenhado com algarismos e "R$" (js/ascii.js) -->
           <canvas aria-hidden="true"></canvas>
-          <h2 class="pilula">Total do mês</h2>
-          <p class="numero-total" id="total-mensal"></p>
-          <p class="legenda-total">Reais por mês<br><span id="quantidade-ativas"></span></p>
+          <!-- O app.js troca "do mês" pelo nome do mês atual: "Total de setembro" -->
+          <h2 class="pilula" id="titulo-total">Total do mês</h2>
+          <p class="numero-total"><span class="numero-total-moeda">R$</span><span id="total-mensal"></span></p>
+          <p class="pilula pilula-contorno" id="quantidade-ativas"></p>
           <!-- Só aparece no computador; no celular o botão fica preso no pé da tela -->
           <button type="button" class="botao botao-no-cartaz" data-acao="adicionar">+ Adicionar assinatura</button>
         </div>
@@ -266,19 +266,45 @@
         </label>
         <p class="erro-campo" id="erro-campo-valor"></p>
 
-        <label>Ciclo
-          <select name="ciclo" required aria-describedby="erro-campo-ciclo">
-            <option value="mensal">Mensal</option>
-            <option value="trimestral">Trimestral</option>
-            <option value="anual">Anual</option>
-          </select>
-        </label>
+        <!-- Ciclo em cartões: botões de rádio de verdade (as setas do teclado
+             trocam a opção), escondidos e desenhados como cartões. Cada cartão
+             mostra quanto o valor digitado pesa por mês (app.js). -->
+        <fieldset class="campo-grupo campo-ciclo" id="campo-ciclo" aria-describedby="erro-campo-ciclo">
+          <legend class="rotulo-campo">Ciclo</legend>
+          <div class="opcoes-ciclo">
+            <label class="opcao-ciclo">
+              <input type="radio" name="ciclo" value="mensal" checked>
+              <span class="opcao-nome">Mensal</span>
+              <small class="opcao-por-mes" data-ciclo="mensal"></small>
+            </label>
+            <label class="opcao-ciclo">
+              <input type="radio" name="ciclo" value="trimestral">
+              <span class="opcao-nome">Trimestral</span>
+              <small class="opcao-por-mes" data-ciclo="trimestral"></small>
+            </label>
+            <label class="opcao-ciclo">
+              <input type="radio" name="ciclo" value="anual">
+              <span class="opcao-nome">Anual</span>
+              <small class="opcao-por-mes" data-ciclo="anual"></small>
+            </label>
+          </div>
+        </fieldset>
         <p class="erro-campo" id="erro-campo-ciclo"></p>
 
-        <label>Próxima cobrança
-          <input name="proxima_cobranca" type="date" min="2000-01-01" max="2099-12-31" required
-                 aria-describedby="erro-campo-proxima_cobranca">
-        </label>
+        <!-- Data com o calendário do app (js/calendario.js). O botão mostra a
+             data e abre o calendário; o valor fica no campo escondido, no
+             formato AAAA-MM-DD, como antes. -->
+        <div class="campo-grupo">
+          <span class="rotulo-campo" id="rotulo-data">Próxima cobrança</span>
+          <button type="button" id="campo-data" class="campo-data" aria-haspopup="true" aria-expanded="false"
+                  aria-controls="calendario-data" aria-labelledby="rotulo-data campo-data-texto"
+                  aria-describedby="erro-campo-proxima_cobranca">
+            <span id="campo-data-texto">Escolha a data</span>
+            <svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v15H5zM5 10h14M9 3v4M15 3v4"/></svg>
+          </button>
+          <input type="hidden" name="proxima_cobranca">
+          <div id="calendario-data" class="calendario" hidden></div>
+        </div>
         <p class="erro-campo" id="erro-campo-proxima_cobranca"></p>
 
         <label>Categoria (opcional)
@@ -327,6 +353,19 @@
       <button type="submit" value="voltar" class="botao botao-contorno botao-largo" autofocus>Voltar</button>
       <button type="submit" value="cancelar" id="dialogo-apagar-cancelar" class="botao-texto">Só parar de contar? Marcar como cancelada</button>
     </form>
+  </dialog>
+
+  <!-- Gaveta da conta: sobe de baixo no celular e fica no meio no computador,
+       como a confirmação de apagar. -->
+  <dialog id="dialogo-conta" class="dialogo" aria-labelledby="dialogo-conta-titulo" aria-describedby="conta-email">
+    <div class="dialogo-conteudo painel-verde">
+      <span class="pilula">Sua conta</span>
+      <h2 id="dialogo-conta-titulo" class="dialogo-titulo">Olá!</h2>
+      <p id="conta-email" class="dialogo-texto"></p>
+      <button type="button" id="botao-sair" class="botao botao-contorno botao-largo">Sair da conta</button>
+      <!-- autofocus no "Fechar": um Enter sem querer não tira ninguém da conta -->
+      <button type="button" id="botao-fechar-conta" class="botao-texto" autofocus>Fechar</button>
+    </div>
   </dialog>
 
   <!-- Ordem dos scripts: todos rodam depois que a página é lida, nesta ordem.

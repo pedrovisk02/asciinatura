@@ -292,12 +292,6 @@ select {
   letter-spacing: -0.03em;
 }
 
-.topo-data {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--texto-suave);
-}
-
 .telas,
 .tela {
   display: flex;
@@ -606,24 +600,237 @@ input::placeholder {
   margin-top: 14px;
 }
 
-/* Tela inicial ------------------------------------------------------------------ */
+/* Campos que não são uma caixa de texto (ciclo e data): mesmo espaçamento e
+   mesmo rótulo dos outros campos. */
+.campo-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  margin: 8px 0 0;
+  padding: 0;
+  border: 0;
+}
 
-.barra-usuario {
+.rotulo-campo {
+  padding: 0;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* Ciclo em cartões ----------------------------------------------------------------- */
+
+.opcoes-ciclo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.opcao-ciclo {
+  position: relative;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  margin: 0;
+  padding: 10px 14px;
+  border: 2px solid var(--claro);
+  border-radius: var(--raio-campo);
+  background: var(--claro);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+/* O botão de rádio continua existindo (teclado e leitor de tela), mas
+   invisível: o cartão inteiro faz o papel dele. */
+.opcao-ciclo input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.opcao-por-mes {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--texto-suave);
+}
+
+.opcao-por-mes:empty {
+  display: none;
+}
+
+.opcao-ciclo:has(input:checked) {
+  border-color: var(--verde);
+  background: var(--verde);
+  color: var(--branco);
+}
+
+.opcao-ciclo:has(input:checked) .opcao-por-mes {
+  color: var(--cinza);
+}
+
+.opcao-ciclo:has(input:focus-visible) {
+  outline: 3px solid var(--verde);
+  outline-offset: 2px;
+}
+
+.com-mouse .opcao-ciclo:not(:has(input:checked)):hover {
+  border-color: var(--verde);
+}
+
+.campo-ciclo[aria-invalid='true'] .opcao-ciclo {
+  border-color: var(--erro);
+}
+
+/* Data com o calendário do app ---------------------------------------------------- */
+
+.campo-data {
+  position: relative;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  padding: 0 0 0 8px;
-  font-size: 13px;
+  min-height: 48px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 2px solid var(--claro);
+  border-radius: var(--raio-campo);
+  background: var(--claro);
+  font-size: 16px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.campo-data.sem-data {
   color: var(--texto-suave);
 }
 
-.barra-usuario strong {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 700;
+.campo-data[aria-expanded='true'] {
+  border-color: var(--verde);
+  background: var(--branco);
 }
+
+.campo-data[aria-invalid='true'] {
+  border-color: var(--erro);
+}
+
+.com-mouse .campo-data:hover {
+  border-color: var(--verde);
+}
+
+.calendario {
+  padding: 12px;
+  border: 2px solid var(--verde);
+  border-radius: 20px;
+  background: var(--branco);
+}
+
+.calendario-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.calendario-mes {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.calendario-nav {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--verde);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--verde);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.com-mouse .calendario-nav:not(:disabled):hover,
+.calendario-nav:not(:disabled):active {
+  background: var(--verde);
+  color: var(--branco);
+}
+
+.calendario-nav:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.calendario-grade {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.calendario-grade th {
+  padding: 4px 0;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--texto-suave);
+}
+
+.calendario-grade td {
+  padding: 2px;
+  text-align: center;
+}
+
+.calendario-dia {
+  width: 100%;
+  max-width: 44px;
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.com-mouse .calendario-dia:hover {
+  background: var(--claro);
+}
+
+/* Hoje: contorno. Dia escolhido: verde. */
+.calendario-dia[aria-current='date'] {
+  box-shadow: inset 0 0 0 2px var(--ascii-medio);
+}
+
+.calendario-grade [aria-selected='true'] .calendario-dia {
+  background: var(--verde);
+  color: var(--branco);
+}
+
+.calendario-rodape {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.botao-mini-cheio {
+  background: var(--verde);
+  color: var(--branco);
+}
+
+.com-mouse .botao-mini-cheio:hover,
+.botao-mini-cheio:active {
+  background: transparent;
+  color: var(--verde);
+}
+
+/* Tela inicial ------------------------------------------------------------------ */
 
 .inicio-grade {
   display: flex;
@@ -643,6 +850,8 @@ input::placeholder {
    pelo app.js a partir dos algarismos e separadores; 100cqi é a largura do
    bloco. O menor dos dois tamanhos vence. */
 .numero-total {
+  display: flex;
+  align-items: center;
   font-size: min(var(--tamanho-maximo-do-total), calc(100cqi / var(--largura-do-total, 4)));
   font-weight: 800;
   white-space: nowrap;
@@ -652,10 +861,20 @@ input::placeholder {
   margin-top: 6px;
 }
 
-.legenda-total {
-  font-size: 14px;
-  font-weight: 800;
-  line-height: 1.15;
+/* "R$" pequeno ao lado do número grande, no lugar da legenda "Reais por mês".
+   Em "em", acompanha o número quando ele diminui para caber no bloco. */
+.numero-total-moeda {
+  font-size: 0.34em;
+  letter-spacing: 0;
+  margin-right: 0.35em;
+}
+
+/* Etiqueta só com contorno, como a da contagem de assinaturas ativas. */
+.pilula-contorno {
+  background: transparent;
+  color: var(--verde);
+  box-shadow: inset 0 0 0 2px currentColor;
+  margin-top: 4px;
 }
 
 /* Botão de adicionar dentro do cartaz: só no computador (ver fim do arquivo). */
@@ -735,25 +954,37 @@ input::placeholder {
   flex-direction: column;
 }
 
+/* A linha avança 10px sobre a margem do painel dos dois lados e devolve esse
+   espaço por dentro. Assim o destaque (ao passar o mouse ou depois de salvar)
+   cabe inteiro dentro da própria linha, sem cobrir o título "Todas" nem
+   encostar na borda do bloco. */
 .linha {
   position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 0;
+  margin: 0 -10px;
+  padding: 12px 10px;
   border-bottom: 2px solid var(--claro);
-  transition: background-color 0.25s ease, box-shadow 0.25s ease;
+  transition: background-color 0.25s ease;
 }
 
 .linha:last-child {
   border-bottom: 0;
-  padding-bottom: 0;
+}
+
+/* A última linha guarda espaço embaixo para o destaque; a lista devolve parte
+   dele ao painel, para a distância até a borda não crescer. */
+.painel > .lista:not(:empty) {
+  margin-bottom: -10px;
 }
 
 /* Linha recém-salva: acende e apaga devagar, com um selo que some sozinho.
-   A sombra espalhada cria a "margem" do brilho sem mexer no tamanho da linha. */
+   O separador de baixo some enquanto isso, como ao passar o mouse: com os
+   cantos arredondados, ele apareceria curvado nas pontas. */
 .linha.destacada {
-  border-radius: 8px;
+  border-radius: 16px;
+  border-bottom-color: transparent;
   animation: linha-acende 2.8s ease-out both;
 }
 
@@ -761,12 +992,10 @@ input::placeholder {
   0%,
   25% {
     background: var(--linha-destacada);
-    box-shadow: 0 0 0 8px var(--linha-destacada);
   }
 
   100% {
     background: transparent;
-    box-shadow: 0 0 0 8px transparent;
   }
 }
 
@@ -975,6 +1204,13 @@ input::placeholder {
   box-shadow: none;
 }
 
+.com-mouse .painel-cinza.cartaz:hover .pilula-contorno,
+.painel-cinza.cartaz:active .pilula-contorno {
+  background: transparent;
+  color: var(--claro);
+  box-shadow: inset 0 0 0 2px currentColor;
+}
+
 /* Cartazes verdes das telas de acesso viram brancos, e as letras escurecem.
    Branco, e não o claro do fundo, para o bloco não sumir na página. */
 .com-mouse .cartaz-ascii:hover,
@@ -1021,12 +1257,12 @@ input::placeholder {
   color: var(--cinza);
 }
 
-/* Linhas das listas acendem. */
+/* Linhas das listas acendem numa faixa clara, dentro do próprio espaço. */
 .com-mouse .linha:hover,
 .linha:active {
-  border-radius: 8px;
+  border-radius: 16px;
+  border-bottom-color: transparent;
   background: var(--claro);
-  box-shadow: 0 0 0 8px var(--claro);
 }
 
 .linha-texto {
@@ -1066,7 +1302,12 @@ input::placeholder {
 .lista-chegando {
   background: var(--branco);
   border-radius: var(--raio-painel);
-  padding: 6px 18px 14px;
+  padding: 8px;
+}
+
+/* Aqui a margem do bloco já é pequena, então a linha não avança sobre ela. */
+.lista-chegando .linha {
+  margin: 0;
 }
 
 .lista-chegando:empty {
@@ -1165,6 +1406,27 @@ input::placeholder {
 .dialogo-texto {
   color: var(--texto-suave);
   margin-bottom: 6px;
+  overflow-wrap: anywhere;
+}
+
+/* Gaveta da conta: a janela em verde, com os textos e botões invertidos
+   (as regras de .painel-verde cuidam dos botões e do contorno de foco). */
+.dialogo-conteudo.painel-verde {
+  background: var(--verde);
+  color: var(--claro);
+}
+
+.dialogo-conteudo.painel-verde .pilula {
+  background: var(--claro);
+  color: var(--verde);
+}
+
+.dialogo-conteudo.painel-verde .dialogo-texto {
+  color: var(--cinza);
+}
+
+.dialogo-conteudo.painel-verde .botao-texto {
+  align-self: center;
 }
 
 /* Quem pediu "reduzir movimento" no aparelho: nada se mexe. ----------------------- */
@@ -1182,7 +1444,6 @@ input::placeholder {
   .linha.destacada {
     animation: none;
     background: var(--linha-destacada);
-    box-shadow: 0 0 0 8px var(--linha-destacada);
   }
 }
 

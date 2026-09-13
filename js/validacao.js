@@ -12,8 +12,9 @@ const CICLOS = ['mensal', 'trimestral', 'anual'];
 const VALOR_MAXIMO = 99_999_999.99;
 
 // Aceita "44,90", "44.90", "44" e "R$ 44,90". Devolve o número, ou uma
-// mensagem de erro se não der para entender.
-function lerValor(texto) {
+// mensagem de erro se não der para entender. Também usada pelos cartões de
+// ciclo, que mostram o valor por mês enquanto a pessoa digita.
+export function lerValor(texto) {
   const limpo = texto.replace(/R\$/i, '').replace(/\s/g, '');
 
   if (limpo === '') return { erro: 'Informe o valor.' };
@@ -31,8 +32,8 @@ function lerValor(texto) {
 }
 
 function erroDaData(texto) {
-  // O campo de data devolve texto vazio enquanto a data estiver incompleta.
-  if (texto === '') return 'Informe a data completa: dia, mês e ano.';
+  // Sem data escolhida no calendário.
+  if (texto === '') return 'Escolha a data da próxima cobrança.';
 
   const partes = /^(\d{4})-\d{2}-\d{2}$/.exec(texto);
   const ano = Number(partes?.[1]);
