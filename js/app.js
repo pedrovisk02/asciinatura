@@ -8,10 +8,11 @@ import {
   definirNovaSenha,
   acompanharSessao,
   erroNoLinkRecebido,
-  mensagemDeErro,
 } from './auth.js';
 import { listarAssinaturas, criarAssinatura, atualizarAssinatura, apagarAssinatura } from './dados.js';
 import { resumoDoInicio, dataDeHoje, dataParaGravarNaEdicao } from './calculos.js';
+import { validarAssinatura, valorParaOCampo } from './validacao.js';
+import { mensagemDeErro, ehFalhaDeConexao, MENSAGEM_SEM_CONEXAO } from './erros.js';
 
 const telas = {
   carregando: document.querySelector('#tela-carregando'),
@@ -69,6 +70,7 @@ async function comBotaoTravado(botao, mostrarErro, acao) {
 const formatoReais = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
 const estadoInicio = document.querySelector('#estado-inicio');
+const botaoTentarDeNovo = document.querySelector('#botao-tentar-de-novo');
 const inicioVazio = document.querySelector('#inicio-vazio');
 const inicioConteudo = document.querySelector('#inicio-conteudo');
 const blocoCanceladas = document.querySelector('#bloco-canceladas');
@@ -138,6 +140,7 @@ function preencherLista(lista, assinaturas, textoDoItem, botoes = []) {
 function limparInicio() {
   numeroDaCarga++;
   estadoInicio.textContent = '';
+  botaoTentarDeNovo.hidden = true;
   inicioVazio.hidden = true;
   inicioConteudo.hidden = true;
   blocoCanceladas.hidden = true;
@@ -150,6 +153,7 @@ function limparInicio() {
 async function carregarInicio() {
   const estaCarga = ++numeroDaCarga;
   estadoInicio.textContent = 'Carregando...';
+  botaoTentarDeNovo.hidden = true;
 
   try {
     const assinaturas = await listarAssinaturas();
@@ -160,9 +164,18 @@ async function carregarInicio() {
   } catch (falha) {
     if (estaCarga !== numeroDaCarga) return;
     console.error(falha);
-    estadoInicio.textContent = 'Não foi possível carregar as assinaturas. Recarregue a página para tentar de novo.';
+    // Se já havia algo na tela, ele continua visível, com a explicação e o
+    // botão para tentar de novo em cima.
+    const jaHaviaAlgoNaTela = !inicioConteudo.hidden || !inicioVazio.hidden;
+    const explicacao = ehFalhaDeConexao(falha) ? MENSAGEM_SEM_CONEXAO : 'Não foi possível carregar as assinaturas.';
+    estadoInicio.textContent = jaHaviaAlgoNaTela
+      ? `${explicacao} As informações abaixo podem estar desatualizadas.`
+      : explicacao;
+    botaoTentarDeNovo.hidden = false;
   }
 }
+
+botaoTentarDeNovo.addEventListener('click', () => carregarInicio());
 
 const botaoEditar = { texto: 'Editar', aoClicar: (assinatura) => abrirFormulario(assinatura) };
 
@@ -233,10 +246,38 @@ function mostrarErroDoFormulario(texto) {
   erroDoFormulario.textContent = texto;
 }
 
+// Nome de cada campo no validacao.js e o nome do campo no formulário.
+const CAMPOS_DO_FORMULARIO = {
+  nome: 'nome',
+  valor: 'valor',
+  ciclo: 'ciclo',
+  proximaCobranca: 'proxima_cobranca',
+  categoria: 'categoria',
+};
+
+// Mostra cada mensagem embaixo do seu campo e marca o campo como inválido
+// (aria-invalid), o que leitores de tela anunciam.
+function mostrarErrosDosCampos(erros) {
+  for (const [chave, nomeDoCampo] of Object.entries(CAMPOS_DO_FORMULARIO)) {
+    const mensagem = erros[chave] ?? '';
+    document.querySelector(`#erro-campo-${nomeDoCampo}`).textContent = mensagem;
+    formularioAssinatura.elements.namedItem(nomeDoCampo).setAttribute('aria-invalid', String(Boolean(mensagem)));
+  }
+}
+
+// Ao corrigir um campo, a mensagem dele some, sem esperar o próximo "Salvar".
+for (const nomeDoCampo of Object.values(CAMPOS_DO_FORMULARIO)) {
+  formularioAssinatura.elements.namedItem(nomeDoCampo).addEventListener('input', (evento) => {
+    document.querySelector(`#erro-campo-${nomeDoCampo}`).textContent = '';
+    evento.target.setAttribute('aria-invalid', 'false');
+  });
+}
+
 function abrirFormulario(assinatura = null) {
   assinaturaEmEdicao = assinatura;
   formularioAssinatura.reset();
   mostrarErroDoFormulario('');
+  mostrarErrosDosCampos({});
   mostrarAviso('');
 
   document.querySelector('#titulo-formulario').textContent = assinatura ? 'Editar assinatura' : 'Nova assinatura';
@@ -245,7 +286,7 @@ function abrirFormulario(assinatura = null) {
   if (assinatura) {
     const campo = (nome) => formularioAssinatura.elements.namedItem(nome);
     campo('nome').value = assinatura.nome;
-    campo('valor').value = assinatura.valor;
+    campo('valor').value = valorParaOCampo(assinatura.valor);
     campo('ciclo').value = assinatura.ciclo;
     campo('categoria').value = assinatura.categoria ?? '';
 
@@ -285,23 +326,34 @@ function ligarFormulario(seletor, acao) {
 }
 
 ligarFormulario('#form-assinatura', async (dados) => {
-  const campos = {
-    nome: dados.get('nome').trim(),
-    valor: Number(dados.get('valor')),
+  const { valido, erros, campos } = validarAssinatura({
+    nome: dados.get('nome'),
+    valor: dados.get('valor'),
     ciclo: dados.get('ciclo'),
-    categoria: dados.get('categoria').trim() || null,
-  };
+    proximaCobranca: dados.get('proxima_cobranca'),
+    categoria: dados.get('categoria'),
+  });
 
+  mostrarErrosDosCampos(erros);
+  if (!valido) {
+    // Leva o cursor ao primeiro campo com problema. Nada é enviado ao banco.
+    const primeiro = Object.keys(CAMPOS_DO_FORMULARIO).find((chave) => erros[chave]);
+    formularioAssinatura.elements.namedItem(CAMPOS_DO_FORMULARIO[primeiro]).focus();
+    return;
+  }
+
+  // Se salvar falhar (sem internet, por exemplo), o erro aparece embaixo do
+  // formulário e tudo o que foi digitado continua nos campos: é só clicar em
+  // "Salvar" de novo.
   if (assinaturaEmEdicao) {
     campos.proximaCobranca = dataParaGravarNaEdicao({
       gravada: assinaturaEmEdicao.proxima_cobranca,
       mostrada: dataMostradaNoFormulario,
-      digitada: dados.get('proxima_cobranca'),
+      digitada: campos.proximaCobranca,
     });
     await atualizarAssinatura(assinaturaEmEdicao.id, campos);
     await voltarAoInicio('Alterações salvas.');
   } else {
-    campos.proximaCobranca = dados.get('proxima_cobranca');
     await criarAssinatura(campos);
     await voltarAoInicio('Assinatura salva.');
   }

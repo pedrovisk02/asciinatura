@@ -177,6 +177,20 @@ begin
     insert into resultado_teste values (10, 'Ciclo fora da lista é recusado', true, 'recusado: ' || sqlerrm);
   end;
 
+  -- 11 (depende de 02-limite-de-data.sql) ------------------------------------
+  begin
+    perform set_config('request.jwt.claims', json_build_object('sub', ana, 'role', 'authenticated')::text, true);
+    perform set_config('role', 'authenticated', true);
+
+    insert into public.assinaturas (nome, valor, ciclo, proxima_cobranca)
+    values ('Ano 0027 (teste)', 10, 'anual', date '0027-03-01');
+
+    perform set_config('role', papel_original, true);
+    insert into resultado_teste values (11, 'Data com ano fora de 2000 a 2099 é recusada', false, 'o banco aceitou');
+  exception when others then
+    insert into resultado_teste values (11, 'Data com ano fora de 2000 a 2099 é recusada', true, 'recusado: ' || sqlerrm);
+  end;
+
   -- Limpeza: apagar as contas de teste apaga as assinaturas delas junto -------
   perform set_config('role', papel_original, true);
   perform set_config('request.jwt.claims', '', true);
@@ -184,7 +198,7 @@ begin
 
   select count(*) into linhas from public.assinaturas where user_id in (ana, bruno);
   insert into resultado_teste values
-    (11, 'Nada do teste ficou no banco', linhas = 0, linhas || ' linha(s) restante(s)');
+    (12, 'Nada do teste ficou no banco', linhas = 0, linhas || ' linha(s) restante(s)');
 end
 $$;
 

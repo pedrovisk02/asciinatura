@@ -71,40 +71,4 @@ export function erroNoLinkRecebido() {
   return { code: codigo };
 }
 
-// Traduz o erro técnico em uma frase para a pessoa. Usa o código do erro, e
-// não o texto em inglês, porque o texto pode mudar entre versões.
-export function mensagemDeErro(erro) {
-  if (erro?.name === 'AuthRetryableFetchError') {
-    return 'Sem conexão com o servidor. Confira a internet e tente de novo.';
-  }
-
-  switch (erro?.code) {
-    // Mesma frase para senha errada e conta inexistente, de propósito:
-    // assim ninguém descobre quais e-mails têm conta. Ver spec, "Tratamento de erro".
-    case 'invalid_credentials':
-      return 'E-mail ou senha incorretos.';
-    case 'user_already_exists':
-      return 'Não foi possível criar a conta com esse e-mail. Se você já tem conta, entre ou recupere a senha.';
-    case 'email_not_confirmed':
-      return 'Falta confirmar o e-mail. Procure a mensagem de confirmação na sua caixa de entrada.';
-    case 'weak_password':
-      return 'Senha fraca demais. Use pelo menos 8 caracteres.';
-    case 'same_password':
-      return 'A nova senha precisa ser diferente da anterior.';
-    case 'otp_expired':
-      return 'Esse link expirou ou já foi usado. Peça um novo.';
-    case 'email_address_invalid':
-    case 'validation_failed':
-      return 'Confira o e-mail digitado.';
-    case 'email_address_not_authorized':
-      return 'Por enquanto o app só consegue enviar e-mails para endereços autorizados.';
-    case 'over_email_send_rate_limit':
-    case 'over_request_rate_limit':
-      return 'Muitas tentativas em pouco tempo. Espere alguns minutos e tente de novo.';
-    // Vem do banco, não do login: a alteração ou exclusão não encontrou a linha.
-    case 'PGRST116':
-      return 'Essa assinatura não foi encontrada. Ela pode ter sido apagada em outro aparelho.';
-    default:
-      return 'Algo deu errado. Tente de novo em instantes.';
-  }
-}
+// A tradução dos erros para frases fica em erros.js.
