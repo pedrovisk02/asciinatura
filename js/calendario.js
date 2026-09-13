@@ -267,6 +267,19 @@ export function criarCalendario({ gatilho, textoDoGatilho, entrada, painel }) {
     }
   });
 
+  // Sair do calendário com o Tab (para o campo de categoria, por exemplo) também
+  // fecha sem mudar nada. Só vale quando se sabe para onde o foco foi: ao trocar
+  // de mês, o dia com o foco é redesenhado e o foco some sem destino, e isso
+  // não deve fechar o calendário.
+  function aoSairDoCalendario(evento) {
+    const destino = evento.relatedTarget;
+    if (aberto && destino && !painel.contains(destino) && destino !== gatilho) {
+      fechar({ devolverFoco: false });
+    }
+  }
+  painel.addEventListener('focusout', aoSairDoCalendario);
+  gatilho.addEventListener('focusout', aoSairDoCalendario);
+
   mostrarValor();
 
   return {

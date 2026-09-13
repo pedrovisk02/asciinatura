@@ -16,6 +16,8 @@ try {
 
   const botao = document.createElement('button');
   botao.type = 'button';
+  // O estilo carrega mesmo quando o JavaScript do app falha.
+  botao.className = 'botao botao-contorno';
   botao.textContent = 'Tentar de novo';
   botao.addEventListener('click', () => window.location.reload());
   telaCarregando.append(' ', botao);

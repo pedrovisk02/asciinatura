@@ -51,8 +51,7 @@ export function decifrarTextos(raiz) {
     const caminhante = document.createTreeWalker(elemento, NodeFilter.SHOW_TEXT);
     while (caminhante.nextNode()) {
       const no = caminhante.currentNode;
-      // As opções de uma lista de escolha (<select>) não são embaralhadas.
-      if (!no.nodeValue.trim() || no.parentElement.closest('option')) continue;
+      if (!no.nodeValue.trim()) continue;
 
       // Se o pedaço já estava no meio do efeito, o texto certo é o guardado,
       // e não o embaralhado que está na tela agora.

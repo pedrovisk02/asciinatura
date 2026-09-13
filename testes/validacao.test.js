@@ -57,6 +57,24 @@ describe('validarAssinatura', () => {
     assert.equal(validarAssinatura({ ...valida, valor: 'R$ 21,90' }).campos.valor, 21.9);
   });
 
+  test('valor aceita ponto de milhar, do jeito brasileiro', () => {
+    assert.equal(validarAssinatura({ ...valida, valor: '1.299,90' }).campos.valor, 1299.9);
+    assert.equal(validarAssinatura({ ...valida, valor: 'R$ 1.200' }).campos.valor, 1200);
+    assert.equal(validarAssinatura({ ...valida, valor: '12.000.000,00' }).campos.valor, 12000000);
+  });
+
+  test('ponto com 1 ou 2 algarismos depois continua sendo centavos', () => {
+    assert.equal(validarAssinatura({ ...valida, valor: '1.29' }).campos.valor, 1.29);
+    assert.equal(validarAssinatura({ ...valida, valor: '1.5' }).campos.valor, 1.5);
+  });
+
+  test('milhar escrito errado é recusado', () => {
+    assert.match(validarAssinatura({ ...valida, valor: '1,299.90' }).erros.valor, /Use só números/);
+    assert.match(validarAssinatura({ ...valida, valor: '12.00.000' }).erros.valor, /Use só números/);
+    assert.match(validarAssinatura({ ...valida, valor: '1.2999' }).erros.valor, /Use só números/);
+    assert.match(validarAssinatura({ ...valida, valor: '1.299.90' }).erros.valor, /Use só números/);
+  });
+
   test('valor com mais de 2 casas decimais é recusado', () => {
     assert.match(validarAssinatura({ ...valida, valor: '44,999' }).erros.valor, /Use só números/);
   });

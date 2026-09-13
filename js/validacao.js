@@ -11,8 +11,8 @@ const CICLOS = ['mensal', 'trimestral', 'anual'];
 // Maior valor que cabe na coluna do banco: numeric(10, 2).
 const VALOR_MAXIMO = 99_999_999.99;
 
-// Aceita "44,90", "44.90", "44" e "R$ 44,90". Devolve o número, ou uma
-// mensagem de erro se não der para entender. Também usada pelos cartões de
+// Aceita "44,90", "44.90", "44", "R$ 44,90" e "1.299,90". Devolve o número, ou
+// uma mensagem de erro se não der para entender. Também usada pelos cartões de
 // ciclo, que mostram o valor por mês enquanto a pessoa digita.
 export function lerValor(texto) {
   const limpo = texto.replace(/R\$/i, '').replace(/\s/g, '');
@@ -20,12 +20,19 @@ export function lerValor(texto) {
   if (limpo === '') return { erro: 'Informe o valor.' };
   if (limpo.startsWith('-')) return { erro: 'O valor precisa ser maior que zero.' };
 
-  // Só números, com vírgula ou ponto e até 2 casas para os centavos.
-  if (!/^\d+([.,]\d{1,2})?$/.test(limpo)) {
+  let numero;
+  if (/^\d+([.,]\d{1,2})?$/.test(limpo)) {
+    // Sem milhar: vírgula ou ponto seguido de 1 ou 2 algarismos são os centavos.
+    numero = limpo.replace(',', '.');
+  } else if (/^\d{1,3}(\.\d{3})+(,\d{1,2})?$/.test(limpo)) {
+    // Com milhar, do jeito brasileiro: pontos separando grupos de 3
+    // algarismos e vírgula para os centavos ("1.299,90").
+    numero = limpo.replaceAll('.', '').replace(',', '.');
+  } else {
     return { erro: 'Use só números, com vírgula para os centavos. Ex: 44,90' };
   }
 
-  const valor = Number(limpo.replace(',', '.'));
+  const valor = Number(numero);
   if (valor === 0) return { erro: 'O valor precisa ser maior que zero.' };
   if (valor > VALOR_MAXIMO) return { erro: 'Valor alto demais.' };
   return { valor };

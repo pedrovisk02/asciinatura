@@ -36,15 +36,69 @@ const aviso = document.querySelector('#aviso');
 // a senha nova. Nesse meio tempo ela já tem sessão, mas não deve ir para o início.
 let definindoNovaSenha = false;
 
+// A tela que está aparecendo, onde a pessoa estava na lista da tela inicial ao
+// abrir o formulário, e o botão que abriu o formulário ("Editar" ou
+// "Adicionar"), para devolver a pessoa ao mesmo ponto quando ela voltar.
+let telaAtual = null;
+let rolagemDoInicio = 0;
+let origemDoFormulario = null;
+
 // Com "animar", a tela entra com o efeito de decodificação. A tela inicial
 // tem a própria entrada (tocarEntrada), que espera a lista carregar.
 function mostrarTela(nome, { animar = true } = {}) {
+  const telaAnterior = telaAtual;
+  if (nome === 'formulario' && telaAnterior === 'inicio') rolagemDoInicio = window.scrollY;
+
   for (const [chave, tela] of Object.entries(telas)) {
     tela.hidden = chave !== nome;
   }
+
+  if (nome !== telaAnterior) {
+    telaAtual = nome;
+    // Cada tela começa do topo. Sem isso, o formulário aberto pelo "Editar" do
+    // fim da lista aparecia no celular já rolado, sem o título e o nome. Ao
+    // voltar do formulário, a tela inicial volta para onde a pessoa estava.
+    window.scrollTo(0, nome === 'inicio' && telaAnterior === 'formulario' ? rolagemDoInicio : 0);
+  }
+
+  if (focoPerdido()) {
+    const voltouDoFormulario = nome === 'inicio' && estaNaTela(origemDoFormulario);
+    focar(voltouDoFormulario ? origemDoFormulario : primeiroTituloVisivel(telas[nome]));
+  }
+
   if (animar && nome !== 'inicio' && nome !== 'carregando') {
     animarEntradaDaTela(telas[nome]);
   }
+}
+
+// Foco ----------------------------------------------------------------------------
+//
+// Quem usa teclado ou leitor de tela fica "no nada" quando o elemento com o
+// foco some junto com a tela antiga: o próximo Tab recomeça do topo e o leitor
+// não avisa que a tela mudou. Nesses casos o foco vai para o título da tela
+// nova (ou de volta ao botão que abriu o formulário).
+
+// Elemento existe e aparece (sem nenhum pai escondido).
+function estaNaTela(elemento) {
+  return Boolean(elemento?.isConnected && elemento.getClientRects().length > 0);
+}
+
+function focoPerdido() {
+  const ativo = document.activeElement;
+  return !ativo || ativo === document.body || !estaNaTela(ativo);
+}
+
+function primeiroTituloVisivel(raiz) {
+  return [...raiz.querySelectorAll('h2')].find(estaNaTela);
+}
+
+function focar(elemento) {
+  if (!elemento) return;
+  // Um título não é botão: tabindex -1 deixa o código colocar o foco nele sem
+  // que ele entre na ordem do Tab.
+  if (elemento.tagName === 'H2') elemento.tabIndex = -1;
+  // preventScroll: quem cuida da rolagem é o mostrarTela.
+  elemento.focus({ preventScroll: true });
 }
 
 // Os blocos da tela aparecem em sequência e os textos se decifram.
@@ -75,6 +129,8 @@ async function mostrarInicio(email) {
   document.querySelector('#conta-email').textContent = email;
   mostrarTela('inicio');
   await carregarInicio();
+  // Os títulos só aparecem com a lista carregada.
+  if (focoPerdido()) focar(primeiroTituloVisivel(telas.inicio));
   // Com a lista pronta, a abertura sai e os blocos entram em sequência.
   await fecharAbertura();
   tocarEntrada();
@@ -126,13 +182,13 @@ function comPrimeiraMaiuscula(texto) {
   return texto.charAt(0).toLocaleUpperCase('pt-BR') + texto.slice(1);
 }
 
-// A etiqueta do total diz de qual mês é o valor: "Total de setembro".
-const mesAtual = Number(dataDeHoje().split('-')[1]);
-document.querySelector('#titulo-total').textContent = `Total de ${MESES[mesAtual - 1]}`;
-
 // Conta as cargas da tela inicial. Se uma resposta antiga chegar depois de uma
 // nova, ou depois de a pessoa sair, ela é descartada em vez de aparecer na tela.
 let numeroDaCarga = 0;
+
+// A data usada para montar a tela inicial pela última vez (null antes da
+// primeira carga e depois de sair).
+let diaDaTela = null;
 
 // "2026-10-05" vira "05/10", sem passar pelo Date (ver calculos.js).
 function formatarDiaEMes(texto) {
@@ -323,6 +379,9 @@ function limparInicio() {
   numeroDaCarga++;
   cancelAnimationFrame(contagemDoTotal);
   totalNaTela = null;
+  diaDaTela = null;
+  origemDoFormulario = null;
+  rolagemDoInicio = 0;
   estadoInicio.textContent = '';
   esqueletoInicio.hidden = true;
   botaoTentarDeNovo.hidden = true;
@@ -353,7 +412,10 @@ async function carregarInicio({ destaque = null, contar = false } = {}) {
 
     esqueletoInicio.hidden = true;
     const contarDe = contar ? totalNaTela : null;
-    mostrarResumo(resumoDoInicio(assinaturas, dataDeHoje()), assinaturas.length, contarDe);
+    diaDaTela = dataDeHoje();
+    // A etiqueta do total diz de qual mês é o valor: "Total de setembro".
+    document.querySelector('#titulo-total').textContent = `Total de ${MESES[Number(diaDaTela.split('-')[1]) - 1]}`;
+    mostrarResumo(resumoDoInicio(assinaturas, diaDaTela), assinaturas.length, contarDe);
     if (destaque) destacarLinha(destaque);
   } catch (falha) {
     if (estaCarga !== numeroDaCarga) return;
@@ -371,7 +433,16 @@ async function carregarInicio({ destaque = null, contar = false } = {}) {
 
 botaoTentarDeNovo.addEventListener('click', () => carregarInicio());
 
-const botaoEditar = { texto: 'Editar', aoClicar: (assinatura) => abrirFormulario(assinatura) };
+// App deixado aberto de um dia para o outro (a aba esquecida no celular, por
+// exemplo): ao voltar para ele, a tela inicial é refeita com a data nova, para
+// os dias que faltam, o "Chegando" e o mês do total não ficarem com a de ontem.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && diaDaTela && diaDaTela !== dataDeHoje()) {
+    carregarInicio();
+  }
+});
+
+const botaoEditar = { texto: 'Editar', aoClicar: (assinatura, botao) => abrirFormulario(assinatura, botao) };
 
 const botaoReativar = {
   texto: 'Reativar',
@@ -379,6 +450,7 @@ const botaoReativar = {
     comBotaoTravado(botao, mostrarAviso, async () => {
       await atualizarAssinatura(id, { ativa: true });
       await carregarInicio({ destaque: { id, nome, selo: 'reativada' }, contar: true });
+      focarLinhaSePerdido(id);
     }),
 };
 
@@ -510,8 +582,10 @@ function atualizarValoresPorMes() {
 
 formularioAssinatura.elements.namedItem('valor').addEventListener('input', atualizarValoresPorMes);
 
-function abrirFormulario(assinatura = null) {
+// "origem": o botão que abriu o formulário, para o foco voltar a ele.
+function abrirFormulario(assinatura = null, origem = null) {
   assinaturaEmEdicao = assinatura;
+  origemDoFormulario = origem;
   formularioAssinatura.reset();
   mostrarErroDoFormulario('');
   mostrarErrosDosCampos({});
@@ -549,6 +623,16 @@ async function voltarAoInicio(destaque = null) {
   // Relê do banco em vez de só mexer na tela: assim a tela mostra o que
   // realmente ficou gravado.
   await carregarInicio({ destaque, contar: true });
+  focarLinhaSePerdido(destaque?.id);
+}
+
+// Depois de salvar, a lista é refeita e o botão que tinha o foco é trocado por
+// um novo. O foco vai para o botão da mesma assinatura na lista nova ("Editar"
+// ou "Corrigir", o último da linha); se ela foi apagada, para o título da tela.
+function focarLinhaSePerdido(id) {
+  if (!focoPerdido()) return;
+  const botaoDaLinha = id && document.querySelector(`.linha[data-id="${id}"] .botao-mini:last-child`);
+  focar(estaNaTela(botaoDaLinha) ? botaoDaLinha : primeiroTituloVisivel(telas.inicio));
 }
 
 // Liga um formulário a uma ação. Se der errado, o erro aparece dentro do
@@ -668,7 +752,7 @@ ligarFormulario('#form-nova-senha', async (dados, formulario) => {
 // Dois botões de adicionar: o preso ao pé da tela (celular) e o do cartaz do
 // total (computador). O CSS mostra só um de cada vez.
 for (const botao of document.querySelectorAll('[data-acao="adicionar"]')) {
-  botao.addEventListener('click', () => abrirFormulario());
+  botao.addEventListener('click', () => abrirFormulario(null, botao));
 }
 
 for (const botao of document.querySelectorAll('[data-ir-para]')) {

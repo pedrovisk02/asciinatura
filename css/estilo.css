@@ -119,8 +119,7 @@ ul {
 }
 
 button,
-input,
-select {
+input {
   font: inherit;
   color: inherit;
 }
@@ -129,6 +128,13 @@ select {
 :focus-visible {
   outline: 3px solid var(--verde);
   outline-offset: 2px;
+}
+
+/* Títulos que recebem o foco ao trocar de tela (app.js, "Foco"): o leitor de
+   tela anuncia onde a pessoa chegou, mas o título não é clicável, então não
+   ganha o contorno de foco. */
+h2[tabindex='-1']:focus {
+  outline: none;
 }
 
 .painel-verde :focus-visible,
@@ -429,6 +435,12 @@ select {
   font-weight: 700;
 }
 
+/* "Tentar de novo" quando o app não consegue abrir (iniciar.js). */
+.carregando .botao {
+  display: block;
+  margin-top: 12px;
+}
+
 .estado:empty {
   display: none;
 }
@@ -568,8 +580,7 @@ label {
   margin-top: 8px;
 }
 
-input,
-select {
+input {
   min-height: 48px;
   width: 100%;
   border: 2px solid var(--claro);
@@ -580,15 +591,13 @@ select {
   font-weight: 500;
 }
 
-input:focus,
-select:focus {
+input:focus {
   border-color: var(--verde);
   background: var(--branco);
   outline: none;
 }
 
-input[aria-invalid='true'],
-select[aria-invalid='true'] {
+input[aria-invalid='true'] {
   border-color: var(--erro);
 }
 
