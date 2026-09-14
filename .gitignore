@@ -1,5 +1,9 @@
-# Configuração pessoal do Claude Code nesta máquina
-.claude/settings.local.json
+# Anotações de trabalho e configuração pessoal: ficam só neste computador e
+# nunca vão para o GitHub.
+CLAUDE.md
+COMECE-AQUI.md
+skills/
+.claude/
 
 # Arquivos gerados pelo Windows
 Thumbs.db
