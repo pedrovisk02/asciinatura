@@ -1,10 +1,10 @@
-// Testes de js/validacao.js e js/erros.js.
+// Testes de publico/js/validacao.js e publico/js/erros.js.
 // Como rodar, na pasta do projeto: node --test
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { validarAssinatura, valorParaOCampo } from '../js/validacao.js';
-import { mensagemDeErro, MENSAGEM_SEM_CONEXAO } from '../js/erros.js';
+import { validarAssinatura, valorParaOCampo } from '../publico/js/validacao.js';
+import { mensagemDeErro, MENSAGEM_SEM_CONEXAO } from '../publico/js/erros.js';
 
 const valida = {
   nome: 'Netflix',

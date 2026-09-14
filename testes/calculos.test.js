@@ -1,4 +1,4 @@
-// Testes das funções de js/calculos.js.
+// Testes das funções de publico/js/calculos.js.
 // Como rodar, na pasta do projeto: node --test
 
 import { describe, test } from 'node:test';
@@ -10,7 +10,7 @@ import {
   dataDeHoje,
   resumoDoInicio,
   dataParaGravarNaEdicao,
-} from '../js/calculos.js';
+} from '../publico/js/calculos.js';
 
 // Compara valores em reais ignorando a imprecisão minúscula das contas com
 // vírgula no computador (44,90 + 25 pode dar 69,899999999999...).

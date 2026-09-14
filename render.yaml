@@ -1,0 +1,49 @@
+# Configuração do Asciinatura no Render (site estático, plano grátis).
+#
+# O Render lê este arquivo ao criar o site pela opção "Blueprint", então
+# nenhuma dessas configurações precisa ser digitada à mão no painel.
+
+services:
+  - type: web
+    runtime: static
+    name: asciinatura
+    # O app não tem etapa de build: os arquivos de publico/ vão para o ar como
+    # estão. O comando só registra isso no log da publicação.
+    buildCommand: echo "Sem etapa de build"
+    # Só esta pasta é publicada. Documentos, testes, SQL e anotações ficam de
+    # fora do endereço do app.
+    staticPublishPath: ./publico
+    headers:
+      # Nenhum outro site pode mostrar o app dentro de um quadro (evita que
+      # alguém disfarce botões do app por baixo de uma página falsa).
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: Content-Security-Policy
+        value: frame-ancestors 'none'
+      # O navegador usa cada arquivo só pelo tipo declarado (um texto não
+      # vira script).
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      # Ao sair do app para outro site, só o endereço principal é informado,
+      # nunca a página completa.
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      # O app não usa câmera, microfone, localização nem pagamentos.
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(), microphone=(), geolocation=(), payment=()
+      # Sempre por conexão segura (https).
+      - path: /*
+        name: Strict-Transport-Security
+        value: max-age=31536000
+      # O navegador confere com o servidor se cada arquivo mudou antes de usar
+      # a cópia guardada. Sem isso, depois de publicar uma correção, alguém
+      # poderia ficar com parte do JavaScript antigo, como aconteceu no
+      # computador do Pedro antes do servidor.py.
+      - path: /*
+        name: Cache-Control
+        value: no-cache

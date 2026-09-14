@@ -18,8 +18,9 @@ class SemCopiaGuardada(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
 
-# Serve a pasta onde este arquivo está, de onde quer que o comando seja rodado.
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
+# Serve só a pasta publico/ (a mesma que o Render publica), de onde quer que o
+# comando seja rodado. Documentos, testes e SQL ficam de fora, como no ar.
+os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'publico'))
 
 print(f'App em http://localhost:{PORTA} (Ctrl+C para parar)')
 http.server.ThreadingHTTPServer(('127.0.0.1', PORTA), SemCopiaGuardada).serve_forever()
