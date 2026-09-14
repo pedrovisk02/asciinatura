@@ -713,17 +713,25 @@ botaoApagar.addEventListener('click', async () => {
 
 // Formulários de acesso ----------------------------------------------------------
 
-ligarFormulario('#form-entrar', async (dados) => {
+// Depois de entrar ou criar conta, os campos são limpos. A tela de acesso só
+// fica escondida, e sem limpar ela guardaria o e-mail e a senha: depois de
+// "Sair da conta", a próxima pessoa no mesmo computador entraria na conta
+// anterior só apertando "Entrar".
+ligarFormulario('#form-entrar', async (dados, formulario) => {
   await entrar(dados.get('email'), dados.get('senha'));
+  formulario.reset();
   // A troca para a tela inicial acontece em acompanharSessao, no fim do arquivo.
 });
 
 ligarFormulario('#form-criar-conta', async (dados, formulario) => {
   const email = dados.get('email');
   const { precisaConfirmarEmail } = await criarConta(email, dados.get('senha'));
+  formulario.reset();
 
+  // Com a confirmação de e-mail desligada no Supabase, a conta já nasce com
+  // sessão e a pessoa entra direto (acompanharSessao). Este caminho fica para
+  // o caso de a confirmação ser religada.
   if (precisaConfirmarEmail) {
-    formulario.reset();
     document.querySelector('#form-entrar [name="email"]').value = email;
     mostrarTela('entrar');
     // A frase não confirma se o e-mail já tinha conta, pelo mesmo motivo da
