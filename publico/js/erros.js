@@ -21,6 +21,9 @@ export function ehFalhaDeConexao(erro) {
 export const MENSAGEM_SEM_CONEXAO = 'Sem conexão com a internet. Confira a rede e tente de novo.';
 
 export function mensagemDeErro(erro) {
+  // Erro criado pelo próprio app, com a frase já escrita para a pessoa (como
+  // a validação do nome na criação de conta).
+  if (typeof erro?.mensagemPronta === 'string') return erro.mensagemPronta;
   if (ehFalhaDeConexao(erro)) return MENSAGEM_SEM_CONEXAO;
 
   switch (erro?.code) {
@@ -38,6 +41,10 @@ export function mensagemDeErro(erro) {
       return 'Senha fraca demais. Use pelo menos 8 caracteres.';
     case 'same_password':
       return 'A nova senha precisa ser diferente da anterior.';
+    // Troca de senha em Minha conta (auth.js, trocarSenha). Quem vê esta
+    // frase já está conectado, então ela não revela nada sobre contas.
+    case 'senha_atual_incorreta':
+      return 'Senha atual incorreta.';
     case 'otp_expired':
       return 'Esse link expirou ou já foi usado. Peça um novo.';
     case 'email_address_invalid':

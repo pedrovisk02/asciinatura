@@ -19,6 +19,8 @@ const TEXTOS_DECIFRAVEIS = [
   '.cobranca-rotulo', '.cobranca-dias', '.cobranca-info',
   '.linha-nome', '.linha-detalhe', '.linha-valor',
   '.canceladas summary', '.acoes-edicao h3', '.dialogo-titulo', '.dialogo-texto',
+  '.menu-conta-email', '.menu-conta-item', '.menu-ajustes-grupo', '.menu-ajustes-item', '.linha-area',
+  '.carteirinha-nome', '.carteirinha-email', '.acao-conta-cabeca', '.aviso-conta',
 ].join(', ');
 
 const DURACAO_POR_TEXTO = 450; // milissegundos
@@ -41,13 +43,22 @@ function embaralhar(texto) {
 // Os textos aparecem embaralhados e se decifram da esquerda para a direita,
 // cada um um pouco depois do anterior, como na abertura.
 export function decifrarTextos(raiz) {
+  decifrarElementos(raiz.querySelectorAll(TEXTOS_DECIFRAVEIS));
+}
+
+// O mesmo efeito num elemento só, como um item de menu ao passar o mouse.
+export function decifrarElemento(elemento) {
+  decifrarElementos([elemento]);
+}
+
+function decifrarElementos(elementos) {
   if (reduzirMovimento()) return;
   const agora = performance.now();
   let posicao = 0;
 
   // Trabalha nos pedaços de texto, e não nos elementos: assim partes como o
   // "/mês" pequeno, os ícones e as quebras de linha continuam no lugar.
-  for (const elemento of raiz.querySelectorAll(TEXTOS_DECIFRAVEIS)) {
+  for (const elemento of elementos) {
     const caminhante = document.createTreeWalker(elemento, NodeFilter.SHOW_TEXT);
     while (caminhante.nextNode()) {
       const no = caminhante.currentNode;
@@ -151,7 +162,8 @@ function ligarMovimentoDoMouse() {
 
 // Onda ao clicar ----------------------------------------------------------------
 
-const COM_ONDA = '.botao, .botao-mini, .cartaz, .cobranca, .linha, .opcao-ciclo, .campo-data';
+const COM_ONDA = '.botao, .botao-mini, .cartaz, .cobranca, .linha, .opcao-ciclo, .campo-data, '
+  + '.menu-conta-item, .menu-ajustes-item, .linha-area, .acao-conta-cabeca, .opcao-tema';
 
 // Um círculo cresce a partir do ponto do clique ou do toque, na cor contrária
 // à do elemento: claro sobre o verde, verde sobre o claro.
@@ -183,6 +195,21 @@ function ligarOnda() {
   });
 }
 
+// Embaralhar ao passar o mouse ------------------------------------------------------
+
+// Nomes de menu (classe .embaralha-ao-passar) se embaralham e se decifram
+// quando o mouse chega neles. Só com mouse: no celular, os textos já se
+// decifram quando a página abre.
+function ligarEmbaralharAoPassar() {
+  document.addEventListener('mouseover', (evento) => {
+    const alvo = evento.target.closest('.embaralha-ao-passar');
+    // Andar de um pedaço para outro dentro do mesmo item não repete o efeito.
+    if (!alvo || alvo.contains(evento.relatedTarget)) return;
+    if (!document.documentElement.classList.contains('com-mouse')) return;
+    decifrarElemento(alvo);
+  });
+}
+
 export function ligarInteracoes() {
   // As cores invertidas por :hover só valem em aparelhos com mouse (ver
   // "Cores invertidas" no estilo.css). Acompanha a troca, como ao ligar um
@@ -194,4 +221,5 @@ export function ligarInteracoes() {
 
   ligarMovimentoDoMouse();
   ligarOnda();
+  ligarEmbaralharAoPassar();
 }

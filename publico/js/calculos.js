@@ -133,6 +133,17 @@ export function dataParaGravarNaEdicao({ gravada, mostrada, digitada }) {
   return undefined;
 }
 
+// "Membro desde setembro de 2026", a partir da data em que a conta foi criada
+// (vem do Supabase no formato ISO, com hora). Usa o mês no relógio de quem
+// está usando o app, como o resto das datas da tela.
+const NOMES_DOS_MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+
+export function textoMembroDesde(dataIso) {
+  const data = new Date(dataIso);
+  if (Number.isNaN(data.getTime())) return '';
+  return `Membro desde ${NOMES_DOS_MESES[data.getMonth()]} de ${data.getFullYear()}`;
+}
+
 // ---------------------------------------------------------------------------
 // Tela inicial
 

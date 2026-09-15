@@ -133,9 +133,12 @@ function animarAbertura() {
   function desenhar(p) {
     const { ctx, largura, altura } = area;
     const { x, y, lado, escala } = logo;
-    const cinza = corDoTema('--cinza');
-    const claro = corDoTema('--claro');
-    const verde = corDoTema('--verde');
+    // Cores por papel, para a abertura seguir a paleta escolhida: quadrado na
+    // cor do cartaz, círculo na cor do texto sobre o fundo forte e etiqueta
+    // na cor do próprio fundo forte.
+    const cinza = corDoTema('--cartaz');
+    const claro = corDoTema('--sobre-forte');
+    const verde = corDoTema('--forte');
     ctx.clearRect(0, 0, largura, altura);
 
     // 1. O quadrado cinza surge crescendo.

@@ -79,6 +79,30 @@ export function validarAssinatura({ nome = '', valor = '', ciclo = '', proximaCo
   };
 }
 
+// Conta ---------------------------------------------------------------------------
+
+// Nome ou apelido: obrigatório, até 30 caracteres, sem os espaços das pontas.
+export const TAMANHO_MAXIMO_DO_NOME = 30;
+
+export function validarNome(texto = '') {
+  const nome = (texto ?? '').trim();
+  if (nome === '') return { erro: 'Informe como quer ser chamado.' };
+  if ([...nome].length > TAMANHO_MAXIMO_DO_NOME) return { erro: `Use no máximo ${TAMANHO_MAXIMO_DO_NOME} caracteres.` };
+  return { nome };
+}
+
+// Troca de senha: a atual é conferida pelo login antes de trocar (auth.js).
+export const TAMANHO_MINIMO_DA_SENHA = 8;
+
+export function validarTrocaDeSenha({ atual = '', nova = '' } = {}) {
+  const erros = {};
+  if (!atual) erros.atual = 'Informe a senha atual.';
+  if (!nova) erros.nova = 'Informe a nova senha.';
+  else if (nova.length < TAMANHO_MINIMO_DA_SENHA) erros.nova = `Use pelo menos ${TAMANHO_MINIMO_DA_SENHA} caracteres.`;
+  else if (nova === atual) erros.nova = 'A nova senha precisa ser diferente da atual.';
+  return { valido: Object.keys(erros).length === 0, erros };
+}
+
 // Valor do banco (44.9) no jeito brasileiro de escrever no campo ("44,90").
 export function valorParaOCampo(valor) {
   return valor.toFixed(2).replace('.', ',');

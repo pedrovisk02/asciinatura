@@ -99,9 +99,61 @@ function quadro(agora) {
 
 // Manchas (telas de acesso) -------------------------------------------------------
 
+// Zona retangular em volta de um elemento de texto, com uma pequena folga.
+// Com o cartaz inclinado, as medidas de tela mudam; por isso a zona usa o
+// tamanho sem inclinação (offsetLeft e offsetTop).
+function zonaDoElemento(elemento) {
+  const x0 = elemento.offsetLeft - 10;
+  const y0 = elemento.offsetTop - 8;
+  const x1 = elemento.offsetLeft + elemento.offsetWidth + 10;
+  const y1 = elemento.offsetTop + elemento.offsetHeight + 8;
+  return { contem: (x, y) => x > x0 && x < x1 && y > y0 && y < y1 };
+}
+
+// Ponto dentro de um polígono (lista de [x, y]), pela regra do raio: conta
+// quantas bordas uma linha horizontal saindo do ponto atravessa.
+function dentroDoPoligono(x, y, pontos) {
+  let dentro = false;
+  for (let i = 0, j = pontos.length - 1; i < pontos.length; j = i++) {
+    const [xi, yi] = pontos[i];
+    const [xj, yj] = pontos[j];
+    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) dentro = !dentro;
+  }
+  return dentro;
+}
+
+// Zona com o formato de um desenho SVG (um <path> fechado), como o cantinho do
+// lápis da carteirinha. "elemento" é quem posiciona o desenho dentro do
+// cartaz; "ativa" diz se a zona vale agora (o cantinho fechado não barra
+// nada); "folga" aumenta um pouco a forma a partir do canto superior direito,
+// para as letras não encostarem na linha.
+export function zonaDaForma(forma, elemento, { ativa = () => true, folga = 1.12 } = {}) {
+  let pontos = null;
+  const caixa = forma.ownerSVGElement.viewBox.baseVal;
+
+  return {
+    contem(x, y) {
+      if (!ativa() || elemento.offsetWidth === 0) return false;
+      // A borda é lida do próprio desenho na primeira vez, já visível.
+      if (!pontos) {
+        const comprimento = forma.getTotalLength();
+        pontos = Array.from({ length: 64 }, (_, i) => {
+          const ponto = forma.getPointAtLength((comprimento * i) / 64);
+          return [ponto.x, ponto.y];
+        });
+      }
+      const escala = elemento.offsetWidth / caixa.width;
+      const px = (x - elemento.offsetLeft) / escala;
+      const py = (y - elemento.offsetTop) / escala;
+      return dentroDoPoligono(caixa.width - (caixa.width - px) / folga, py / folga, pontos);
+    },
+  };
+}
+
 // Manchas feitas das letras de "Asciinatura", que flutuam devagar e trocam de
-// letra em onda. "evitar" são os elementos de texto do cartaz: as letras não
-// passam por trás deles, para não atrapalhar a leitura.
+// letra em onda. "evitar" são os elementos de texto do cartaz, onde as letras
+// não passam para não atrapalhar a leitura, ou zonas com formato próprio
+// (zonaDaForma).
 export function animarManchas(canvas, evitar = []) {
   const cartaz = canvas.parentElement;
   const deslocamento = { x: 0, y: 0 };
@@ -110,14 +162,7 @@ export function animarManchas(canvas, evitar = []) {
     ctx.clearRect(0, 0, largura, altura);
     acompanharMouse(deslocamento, cartaz);
 
-    // Com o cartaz inclinado, as medidas de tela mudam; as zonas a evitar são
-    // calculadas pelo tamanho sem inclinação (offsetLeft e offsetTop).
-    const zonas = evitar.map((elemento) => ({
-      x0: elemento.offsetLeft - 10,
-      y0: elemento.offsetTop - 8,
-      x1: elemento.offsetLeft + elemento.offsetWidth + 10,
-      y1: elemento.offsetTop + elemento.offsetHeight + 8,
-    }));
+    const zonas = evitar.map((item) => (typeof item.contem === 'function' ? item : zonaDoElemento(item)));
     const tons = ['--manchas-1', '--manchas-2', '--manchas-3', '--manchas-4'].map((nome) => corDoTema(nome, cartaz));
 
     // Cada mancha é um "ímã": posição (x, y), tamanho, velocidade e fase.
@@ -139,7 +184,7 @@ export function animarManchas(canvas, evitar = []) {
         const y = j * celulaA;
         const cx = x + celulaL / 2;
         const cy = y + celulaA / 2;
-        if (zonas.some((z) => cx > z.x0 && cx < z.x1 && cy > z.y0 && cy < z.y1)) continue;
+        if (zonas.some((zona) => zona.contem(cx, cy))) continue;
 
         let campo = 0;
         for (const [mx, my, raio] of manchas) {

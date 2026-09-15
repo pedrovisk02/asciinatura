@@ -10,6 +10,7 @@ import {
   dataDeHoje,
   resumoDoInicio,
   dataParaGravarNaEdicao,
+  textoMembroDesde,
 } from '../publico/js/calculos.js';
 
 // Compara valores em reais ignorando a imprecisão minúscula das contas com
@@ -260,5 +261,18 @@ describe('resumoDoInicio', () => {
     resumoDoInicio(lista, HOJE);
     assert.deepEqual(lista.map((a) => a.nome), ['Netflix', 'Adobe']);
     assert.equal(netflix.proxima_cobranca, '2026-08-05');
+  });
+});
+
+describe('textoMembroDesde', () => {
+  test('mês por extenso e ano', () => {
+    // Meio do mês, para o fuso horário de quem roda o teste não mudar o mês.
+    assert.equal(textoMembroDesde('2026-09-13T15:00:00Z'), 'Membro desde setembro de 2026');
+    assert.equal(textoMembroDesde('2025-03-15T12:00:00Z'), 'Membro desde março de 2025');
+  });
+
+  test('data inválida não mostra nada', () => {
+    assert.equal(textoMembroDesde('ontem'), '');
+    assert.equal(textoMembroDesde(undefined), '');
   });
 });

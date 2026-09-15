@@ -41,34 +41,79 @@
 }
 
 /* Cores e medidas --------------------------------------------------------------
-   Paleta tirada da referência: #2B4239, #AFAFAF e #EDEDED, mais branco.
-   Contraste conferido (mínimo 4,5:1 para texto comum):
+   As cores têm nome de papel (fundo, destaque, cartaz...), e não de cor, para
+   cada paleta de css/temas.css só trocar os valores. Os valores daqui são os
+   da paleta "Pôster verde" clara, tirada da referência: #2B4239, #AFAFAF e
+   #EDEDED, mais branco. Contraste conferido (mínimo 4,5:1 para texto comum):
    verde sobre cinza 4,9 | verde sobre claro 9,2 | cinza sobre verde 4,9
    texto-suave sobre branco 6,3 | erro sobre branco 6,9 */
 
 :root {
-  --verde: #2b4239;
-  --cinza: #afafaf;
-  --claro: #ededed;
-  --branco: #ffffff;
+  /* Base da página */
+  --fundo: #ededed;
+  --superficie: #ffffff;
+  --campo: #ededed;
+  --texto: #2b4239;
   --texto-suave: #5e6360;
+  --separador: #ededed;
+  --realce: #ededed;
   --erro: #9a3b34;
 
-  /* Tons de apoio, todos derivados da paleta: letras das animações, fundo
-     dos blocos piscando e o brilho da linha recém-salva. */
+  /* Botões, etiquetas e item escolhido */
+  --destaque: #2b4239;
+  --sobre-destaque: #ffffff;
+  --sobre-destaque-suave: #afafaf;
+
+  /* Cartaz cinza (total, formulário, tela vazia) */
+  --cartaz: #afafaf;
+  --sobre-cartaz: #2b4239;
+  --numero-total: var(--sobre-cartaz);
+  --circulo-cartaz: #ededed;
+  --circulo-cartaz-invertido: #afafaf;
+
+  /* Painéis fortes (telas de acesso, gavetas, outras ações) */
+  --forte: #2b4239;
+  --sobre-forte: #ededed;
+  --sobre-forte-suave: #afafaf;
+
+  /* Os dois blocos grandes de "Chegando" */
+  --bloco-1: #2b4239;
+  --sobre-bloco-1: #ededed;
+  --info-bloco-1: #ffffff;
+  --dias-bloco-1: #afafaf;
+  --bloco-2: #ffffff;
+  --sobre-bloco-2: #2b4239;
+  --dias-bloco-2: #5e6360;
+
+  /* Logo: quadrado, círculo e etiqueta */
+  --logo-quadrado: var(--destaque);
+  --logo-circulo: var(--cartaz);
+  --logo-etiqueta: var(--fundo);
+
+  /* Tons de apoio: letras das animações, fundo dos blocos piscando, brilho da
+     linha recém-salva, ondas ao clicar e o véu atrás das janelas. */
   --ascii-escuro: #4a6a5e;
   --ascii-medio: #6f8f82;
   --ascii-circulo: #c9c9c9;
-  --ascii-circulo-brilho: var(--claro);
+  --ascii-circulo-brilho: #ededed;
+  --ascii-circulo-invertido: #6f8f82;
+  --ascii-brilho-invertido: #afafaf;
   --esqueleto: #d9d9d9;
   --linha-destacada: #dde6e1;
+  --onda-clara: rgb(237 237 237 / 0.35);
+  --onda-escura: rgb(43 66 57 / 0.2);
+  --veu: rgb(22 33 29 / 0.62);
 
-  /* Tons das manchas de letras, do mais apagado ao mais forte. Ficam em
-     variáveis para inverterem junto com o cartaz ao passar o mouse. */
-  --manchas-1: var(--ascii-escuro);
-  --manchas-2: var(--ascii-medio);
-  --manchas-3: var(--cinza);
-  --manchas-4: var(--claro);
+  /* Tons das manchas de letras, do mais apagado ao mais forte, e os mesmos
+     tons invertidos para quando o cartaz inverte ao passar o mouse. */
+  --manchas-1: #4a6a5e;
+  --manchas-2: #6f8f82;
+  --manchas-3: #afafaf;
+  --manchas-4: #ededed;
+  --manchas-invertidas-1: #d4d4d4;
+  --manchas-invertidas-2: #bdbdbd;
+  --manchas-invertidas-3: #6f8f82;
+  --manchas-invertidas-4: #2b4239;
 
   --raio-painel: 28px;
   --raio-campo: 16px;
@@ -97,8 +142,8 @@ html {
 
 body {
   margin: 0;
-  background: var(--claro);
-  color: var(--verde);
+  background: var(--fundo);
+  color: var(--texto);
   font-family: var(--fonte);
   font-weight: 500;
   font-size: 16px;
@@ -126,7 +171,7 @@ input {
 
 /* Foco sempre visível para quem navega pelo teclado. */
 :focus-visible {
-  outline: 3px solid var(--verde);
+  outline: 3px solid var(--destaque);
   outline-offset: 2px;
 }
 
@@ -139,7 +184,7 @@ h2[tabindex='-1']:focus {
 
 .painel-verde :focus-visible,
 .cartaz-ascii :focus-visible {
-  outline-color: var(--claro);
+  outline-color: var(--sobre-forte);
 }
 
 /* Some da tela, mas continua sendo lido por leitores de tela. */
@@ -185,8 +230,8 @@ h2[tabindex='-1']:focus {
   position: fixed;
   inset: 0;
   z-index: 10;
-  background: var(--verde);
-  color: var(--claro);
+  background: var(--forte);
+  color: var(--sobre-forte);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -247,7 +292,7 @@ h2[tabindex='-1']:focus {
   position: relative;
   font-family: var(--fonte-mono);
   font-size: 13px;
-  color: var(--cinza);
+  color: var(--sobre-forte-suave);
 }
 
 #app {
@@ -278,10 +323,36 @@ h2[tabindex='-1']:focus {
   font-size: 20px;
 }
 
-.marca img {
+.marca-icone {
   display: block;
   width: 26px;
   height: 26px;
+}
+
+/* Cores do logo: no topo, "Cartaz invertido"; na abertura, sobre o fundo
+   forte, o "Cartaz". */
+.logo-quadrado {
+  fill: var(--logo-quadrado);
+}
+
+.logo-circulo {
+  fill: var(--logo-circulo);
+}
+
+.logo-etiqueta {
+  fill: var(--logo-etiqueta);
+}
+
+.abertura .logo-quadrado {
+  fill: var(--cartaz);
+}
+
+.abertura .logo-circulo {
+  fill: var(--sobre-forte);
+}
+
+.abertura .logo-etiqueta {
+  fill: var(--forte);
 }
 
 .marca-nome {
@@ -313,20 +384,21 @@ h2[tabindex='-1']:focus {
 }
 
 .painel-cinza {
-  background: var(--cinza);
+  background: var(--cartaz);
+  color: var(--sobre-cartaz);
 }
 
 .painel-verde {
-  background: var(--verde);
-  color: var(--claro);
+  background: var(--forte);
+  color: var(--sobre-forte);
 }
 
 .painel-branco {
-  background: var(--branco);
+  background: var(--superficie);
 }
 
 .painel-alerta {
-  background: var(--branco);
+  background: var(--superficie);
   border: 3px solid var(--erro);
 }
 
@@ -351,7 +423,7 @@ h2[tabindex='-1']:focus {
   width: 190px;
   height: 190px;
   border-radius: 50%;
-  background: var(--claro);
+  background: var(--circulo-cartaz);
   right: -48px;
   top: 38px;
   transform: translate(var(--circulo-x, 0px), var(--circulo-y, 0px));
@@ -369,8 +441,8 @@ h2[tabindex='-1']:focus {
 
 /* Telas de acesso: cartaz verde com manchas de letras (js/ascii.js). */
 .cartaz-ascii {
-  background: var(--verde);
-  color: var(--claro);
+  background: var(--forte);
+  color: var(--sobre-forte);
   min-height: 240px;
 }
 
@@ -379,8 +451,8 @@ h2[tabindex='-1']:focus {
 }
 
 .cartaz-ascii .pilula {
-  background: var(--claro);
-  color: var(--verde);
+  background: var(--sobre-forte);
+  color: var(--forte);
 }
 
 /* Cartaz do total: o círculo sólido dá lugar ao círculo de algarismos. O
@@ -405,8 +477,8 @@ h2[tabindex='-1']:focus {
 
 .pilula {
   display: inline-block;
-  background: var(--verde);
-  color: var(--branco);
+  background: var(--destaque);
+  color: var(--sobre-destaque);
   border-radius: 999px;
   padding: 4px 12px;
   font-size: 12px;
@@ -423,7 +495,7 @@ h2[tabindex='-1']:focus {
 /* Mensagens -------------------------------------------------------------------- */
 
 .aviso {
-  background: var(--branco);
+  background: var(--superficie);
   border-radius: var(--raio-campo);
   padding: 12px 16px;
   font-weight: 700;
@@ -465,16 +537,16 @@ h2[tabindex='-1']:focus {
   border: 0;
   border-radius: 999px;
   padding: 12px 22px;
-  background: var(--verde);
-  color: var(--branco);
+  background: var(--destaque);
+  color: var(--sobre-destaque);
   font-weight: 700;
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .painel-verde .botao {
-  background: var(--claro);
-  color: var(--verde);
+  background: var(--sobre-forte);
+  color: var(--forte);
 }
 
 .botao-largo {
@@ -483,13 +555,13 @@ h2[tabindex='-1']:focus {
 
 .botao-contorno {
   background: transparent;
-  color: var(--verde);
+  color: var(--destaque);
   border: 2px solid currentColor;
 }
 
 .painel-verde .botao-contorno {
   background: transparent;
-  color: var(--claro);
+  color: var(--sobre-forte);
 }
 
 .botao-com-icone {
@@ -513,7 +585,7 @@ h2[tabindex='-1']:focus {
 .botao-mini {
   position: relative;
   min-height: 40px;
-  border: 2px solid var(--verde);
+  border: 2px solid var(--destaque);
   border-radius: 999px;
   background: transparent;
   padding: 4px 12px;
@@ -547,7 +619,7 @@ button:disabled {
 }
 
 .barra-acao .botao {
-  box-shadow: 0 0 0 6px var(--claro);
+  box-shadow: 0 0 0 6px var(--fundo);
 }
 
 /* Tapa só a faixa entre o botão e a borda de baixo da tela, para a lista não
@@ -560,7 +632,7 @@ button:disabled {
   right: calc(-1 * var(--espaco));
   bottom: 0;
   height: calc(var(--espaco) + env(safe-area-inset-bottom));
-  background: var(--claro);
+  background: var(--fundo);
 }
 
 /* Formulários ------------------------------------------------------------------ */
@@ -583,17 +655,17 @@ label {
 input {
   min-height: 48px;
   width: 100%;
-  border: 2px solid var(--claro);
+  border: 2px solid var(--campo);
   border-radius: var(--raio-campo);
-  background: var(--claro);
+  background: var(--campo);
   padding: 10px 14px;
   font-size: 16px;
   font-weight: 500;
 }
 
 input:focus {
-  border-color: var(--verde);
-  background: var(--branco);
+  border-color: var(--destaque);
+  background: var(--superficie);
   outline: none;
 }
 
@@ -644,9 +716,9 @@ input::placeholder {
   min-height: 48px;
   margin: 0;
   padding: 10px 14px;
-  border: 2px solid var(--claro);
+  border: 2px solid var(--campo);
   border-radius: var(--raio-campo);
-  background: var(--claro);
+  background: var(--campo);
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
@@ -673,22 +745,22 @@ input::placeholder {
 }
 
 .opcao-ciclo:has(input:checked) {
-  border-color: var(--verde);
-  background: var(--verde);
-  color: var(--branco);
+  border-color: var(--destaque);
+  background: var(--destaque);
+  color: var(--sobre-destaque);
 }
 
 .opcao-ciclo:has(input:checked) .opcao-por-mes {
-  color: var(--cinza);
+  color: var(--sobre-destaque-suave);
 }
 
 .opcao-ciclo:has(input:focus-visible) {
-  outline: 3px solid var(--verde);
+  outline: 3px solid var(--destaque);
   outline-offset: 2px;
 }
 
 .com-mouse .opcao-ciclo:not(:has(input:checked)):hover {
-  border-color: var(--verde);
+  border-color: var(--destaque);
 }
 
 .campo-ciclo[aria-invalid='true'] .opcao-ciclo {
@@ -706,9 +778,9 @@ input::placeholder {
   min-height: 48px;
   width: 100%;
   padding: 10px 14px;
-  border: 2px solid var(--claro);
+  border: 2px solid var(--campo);
   border-radius: var(--raio-campo);
-  background: var(--claro);
+  background: var(--campo);
   font-size: 16px;
   font-weight: 500;
   text-align: left;
@@ -721,8 +793,8 @@ input::placeholder {
 }
 
 .campo-data[aria-expanded='true'] {
-  border-color: var(--verde);
-  background: var(--branco);
+  border-color: var(--destaque);
+  background: var(--superficie);
 }
 
 .campo-data[aria-invalid='true'] {
@@ -730,14 +802,14 @@ input::placeholder {
 }
 
 .com-mouse .campo-data:hover {
-  border-color: var(--verde);
+  border-color: var(--destaque);
 }
 
 .calendario {
   padding: 12px;
-  border: 2px solid var(--verde);
+  border: 2px solid var(--destaque);
   border-radius: 20px;
-  background: var(--branco);
+  background: var(--superficie);
 }
 
 .calendario-topo {
@@ -758,18 +830,18 @@ input::placeholder {
   place-items: center;
   width: 40px;
   height: 40px;
-  border: 2px solid var(--verde);
+  border: 2px solid var(--destaque);
   border-radius: 50%;
   background: transparent;
-  color: var(--verde);
+  color: var(--destaque);
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .com-mouse .calendario-nav:not(:disabled):hover,
 .calendario-nav:not(:disabled):active {
-  background: var(--verde);
-  color: var(--branco);
+  background: var(--destaque);
+  color: var(--sobre-destaque);
 }
 
 .calendario-nav:disabled {
@@ -809,7 +881,7 @@ input::placeholder {
 }
 
 .com-mouse .calendario-dia:hover {
-  background: var(--claro);
+  background: var(--realce);
 }
 
 /* Hoje: contorno. Dia escolhido: verde. */
@@ -818,8 +890,8 @@ input::placeholder {
 }
 
 .calendario-grade [aria-selected='true'] .calendario-dia {
-  background: var(--verde);
-  color: var(--branco);
+  background: var(--destaque);
+  color: var(--sobre-destaque);
 }
 
 .calendario-rodape {
@@ -829,14 +901,14 @@ input::placeholder {
 }
 
 .botao-mini-cheio {
-  background: var(--verde);
-  color: var(--branco);
+  background: var(--destaque);
+  color: var(--sobre-destaque);
 }
 
 .com-mouse .botao-mini-cheio:hover,
 .botao-mini-cheio:active {
   background: transparent;
-  color: var(--verde);
+  color: var(--destaque);
 }
 
 /* Tela inicial ------------------------------------------------------------------ */
@@ -868,6 +940,7 @@ input::placeholder {
   letter-spacing: -0.05em;
   font-variant-numeric: tabular-nums;
   margin-top: 6px;
+  color: var(--numero-total);
 }
 
 /* "R$" pequeno ao lado do número grande, no lugar da legenda "Reais por mês".
@@ -881,7 +954,7 @@ input::placeholder {
 /* Etiqueta só com contorno, como a da contagem de assinaturas ativas. */
 .pilula-contorno {
   background: transparent;
-  color: var(--verde);
+  color: inherit;
   box-shadow: inset 0 0 0 2px currentColor;
   margin-top: 4px;
 }
@@ -933,13 +1006,25 @@ input::placeholder {
   font-variant-numeric: tabular-nums;
 }
 
-.painel-verde .cobranca-dias {
-  color: var(--cinza);
+/* Primeiro bloco (a próxima cobrança) e segundo bloco ("Depois"): cada
+   paleta escolhe as cores deles. */
+.cobranca-principal {
+  background: var(--bloco-1);
+  color: var(--sobre-bloco-1);
 }
 
-.painel-branco .cobranca-dias {
+.cobranca-principal .cobranca-dias {
+  color: var(--dias-bloco-1);
+}
+
+.cobranca-secundaria {
+  background: var(--bloco-2);
+  color: var(--sobre-bloco-2);
+}
+
+.cobranca-secundaria .cobranca-dias {
   font-size: 48px;
-  color: var(--texto-suave);
+  color: var(--dias-bloco-2);
 }
 
 .cobranca-dias-palavra {
@@ -953,8 +1038,8 @@ input::placeholder {
   overflow-wrap: anywhere;
 }
 
-.painel-verde .cobranca-info {
-  color: var(--branco);
+.cobranca-principal .cobranca-info {
+  color: var(--info-bloco-1);
 }
 
 /* Linhas das listas (todas, chegando, canceladas, com problema). */
@@ -974,7 +1059,7 @@ input::placeholder {
   gap: 10px;
   margin: 0 -10px;
   padding: 12px 10px;
-  border-bottom: 2px solid var(--claro);
+  border-bottom: 2px solid var(--separador);
   transition: background-color 0.25s ease;
 }
 
@@ -1012,8 +1097,8 @@ input::placeholder {
   display: inline-block;
   margin-left: 6px;
   vertical-align: 2px;
-  background: var(--verde);
-  color: var(--branco);
+  background: var(--destaque);
+  color: var(--sobre-destaque);
   border-radius: 999px;
   padding: 1px 8px;
   font-size: 11px;
@@ -1140,11 +1225,11 @@ input::placeholder {
 }
 
 .onda-clara {
-  background: rgb(237 237 237 / 0.35);
+  background: var(--onda-clara);
 }
 
 .onda-escura {
-  background: rgb(43 66 57 / 0.2);
+  background: var(--onda-escura);
 }
 
 @keyframes onda {
@@ -1162,61 +1247,62 @@ input::placeholder {
 
 .com-mouse .botao:not(.botao-contorno):hover,
 .botao:not(.botao-contorno):active {
-  background: var(--branco);
-  color: var(--verde);
-  box-shadow: inset 0 0 0 2px var(--verde);
+  background: var(--superficie);
+  color: var(--destaque);
+  box-shadow: inset 0 0 0 2px var(--destaque);
 }
 
 .com-mouse .barra-acao .botao:hover,
 .barra-acao .botao:active {
-  box-shadow: inset 0 0 0 2px var(--verde), 0 0 0 6px var(--claro);
+  box-shadow: inset 0 0 0 2px var(--destaque), 0 0 0 6px var(--fundo);
 }
 
 .com-mouse .botao-contorno:hover,
 .botao-contorno:active {
-  background: var(--verde);
-  color: var(--claro);
+  background: var(--destaque);
+  color: var(--sobre-destaque);
 }
 
 .com-mouse .painel-verde .botao-contorno:hover,
 .painel-verde .botao-contorno:active {
-  background: var(--claro);
-  color: var(--verde);
+  background: var(--sobre-forte);
+  color: var(--forte);
 }
 
 .com-mouse .botao-mini:hover,
 .botao-mini:active {
-  background: var(--verde);
-  color: var(--branco);
+  background: var(--destaque);
+  color: var(--sobre-destaque);
 }
 
 /* Cartazes cinza (total, formulário, tela vazia) viram verdes. */
 .com-mouse .painel-cinza.cartaz:hover,
 .painel-cinza.cartaz:active {
-  background: var(--verde);
-  color: var(--claro);
-  --ascii-circulo: var(--ascii-medio);
-  --ascii-circulo-brilho: var(--cinza);
+  background: var(--forte);
+  color: var(--sobre-forte);
+  --numero-total: var(--sobre-forte);
+  --ascii-circulo: var(--ascii-circulo-invertido);
+  --ascii-circulo-brilho: var(--ascii-brilho-invertido);
 }
 
 .com-mouse .painel-cinza.cartaz:not(.circulo-em-letras):hover::before,
 .painel-cinza.cartaz:not(.circulo-em-letras):active::before {
-  background: var(--cinza);
+  background: var(--circulo-cartaz-invertido);
 }
 
 .com-mouse .painel-cinza.cartaz:hover .pilula,
 .painel-cinza.cartaz:active .pilula,
 .com-mouse .painel-cinza.cartaz:hover .botao-no-cartaz,
 .painel-cinza.cartaz:active .botao-no-cartaz {
-  background: var(--claro);
-  color: var(--verde);
+  background: var(--sobre-forte);
+  color: var(--forte);
   box-shadow: none;
 }
 
 .com-mouse .painel-cinza.cartaz:hover .pilula-contorno,
 .painel-cinza.cartaz:active .pilula-contorno {
   background: transparent;
-  color: var(--claro);
+  color: var(--sobre-forte);
   box-shadow: inset 0 0 0 2px currentColor;
 }
 
@@ -1224,46 +1310,46 @@ input::placeholder {
    Branco, e não o claro do fundo, para o bloco não sumir na página. */
 .com-mouse .cartaz-ascii:hover,
 .cartaz-ascii:active {
-  background: var(--branco);
-  color: var(--verde);
-  --manchas-1: #d4d4d4;
-  --manchas-2: #bdbdbd;
-  --manchas-3: var(--ascii-medio);
-  --manchas-4: var(--verde);
+  background: var(--superficie);
+  color: var(--texto);
+  --manchas-1: var(--manchas-invertidas-1);
+  --manchas-2: var(--manchas-invertidas-2);
+  --manchas-3: var(--manchas-invertidas-3);
+  --manchas-4: var(--manchas-invertidas-4);
 }
 
 .com-mouse .cartaz-ascii:hover .pilula,
 .cartaz-ascii:active .pilula {
-  background: var(--verde);
-  color: var(--branco);
+  background: var(--destaque);
+  color: var(--sobre-destaque);
 }
 
-/* Blocos de cobrança: o verde vira branco e o branco vira verde. */
-.com-mouse .cobranca.painel-verde:hover,
-.cobranca.painel-verde:active {
-  background: var(--branco);
-  color: var(--verde);
+/* Blocos de cobrança: cada um ganha as cores do outro. */
+.com-mouse .cobranca-principal:hover,
+.cobranca-principal:active {
+  background: var(--bloco-2);
+  color: var(--sobre-bloco-2);
 }
 
-.com-mouse .cobranca.painel-verde:hover .cobranca-dias,
-.cobranca.painel-verde:active .cobranca-dias {
-  color: var(--texto-suave);
+.com-mouse .cobranca-principal:hover .cobranca-dias,
+.cobranca-principal:active .cobranca-dias {
+  color: var(--dias-bloco-2);
 }
 
-.com-mouse .cobranca.painel-verde:hover .cobranca-info,
-.cobranca.painel-verde:active .cobranca-info {
-  color: var(--verde);
+.com-mouse .cobranca-principal:hover .cobranca-info,
+.cobranca-principal:active .cobranca-info {
+  color: var(--sobre-bloco-2);
 }
 
-.com-mouse .cobranca.painel-branco:hover,
-.cobranca.painel-branco:active {
-  background: var(--verde);
-  color: var(--branco);
+.com-mouse .cobranca-secundaria:hover,
+.cobranca-secundaria:active {
+  background: var(--bloco-1);
+  color: var(--info-bloco-1);
 }
 
-.com-mouse .cobranca.painel-branco:hover .cobranca-dias,
-.cobranca.painel-branco:active .cobranca-dias {
-  color: var(--cinza);
+.com-mouse .cobranca-secundaria:hover .cobranca-dias,
+.cobranca-secundaria:active .cobranca-dias {
+  color: var(--dias-bloco-1);
 }
 
 /* Linhas das listas acendem numa faixa clara, dentro do próprio espaço. */
@@ -1271,7 +1357,7 @@ input::placeholder {
 .linha:active {
   border-radius: 16px;
   border-bottom-color: transparent;
-  background: var(--claro);
+  background: var(--realce);
 }
 
 .linha-texto {
@@ -1309,7 +1395,7 @@ input::placeholder {
 }
 
 .lista-chegando {
-  background: var(--branco);
+  background: var(--superficie);
   border-radius: var(--raio-painel);
   padding: 8px;
 }
@@ -1363,11 +1449,11 @@ input::placeholder {
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--verde);
+  color: var(--texto);
 }
 
 .dialogo::backdrop {
-  background: rgb(22 33 29 / 0.62);
+  background: var(--veu);
 }
 
 .dialogo[open] {
@@ -1390,7 +1476,7 @@ input::placeholder {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background: var(--claro);
+  background: var(--fundo);
   border-radius: var(--raio-painel);
   padding: 20px;
 }
@@ -1421,21 +1507,460 @@ input::placeholder {
 /* Gaveta da conta: a janela em verde, com os textos e botões invertidos
    (as regras de .painel-verde cuidam dos botões e do contorno de foco). */
 .dialogo-conteudo.painel-verde {
-  background: var(--verde);
-  color: var(--claro);
+  background: var(--forte);
+  color: var(--sobre-forte);
 }
 
 .dialogo-conteudo.painel-verde .pilula {
-  background: var(--claro);
-  color: var(--verde);
+  background: var(--sobre-forte);
+  color: var(--forte);
 }
 
 .dialogo-conteudo.painel-verde .dialogo-texto {
-  color: var(--cinza);
+  color: var(--sobre-forte-suave);
 }
 
 .dialogo-conteudo.painel-verde .botao-texto {
   align-self: center;
+}
+
+/* Conta e configurações (bloco 1) ------------------------------------------------- */
+
+/* Links com cara de botão (gaveta da conta). */
+a.botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.botao-gaveta {
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+.botao-gaveta .seta {
+  margin-left: auto;
+}
+
+.dialogo-conteudo.painel-verde .erro,
+.carteirinha .erro {
+  color: var(--sobre-forte);
+}
+
+/* Menu suspenso da conta: só no computador (no celular, a gaveta). */
+.topo-conta {
+  position: relative;
+}
+
+.menu-conta {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 5;
+  width: 250px;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  border-radius: 20px;
+  background: var(--superficie);
+  color: var(--texto);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.14);
+  animation: menu-desce 0.2s ease-out;
+}
+
+@keyframes menu-desce {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.menu-conta-email {
+  padding: 6px 12px 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--texto-suave);
+  overflow-wrap: anywhere;
+}
+
+.menu-conta-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.menu-conta-item .seta {
+  margin-left: auto;
+}
+
+.com-mouse .menu-conta-item:hover,
+.menu-conta-item:active {
+  background: var(--destaque);
+  color: var(--sobre-destaque);
+}
+
+.menu-conta-separador {
+  height: 2px;
+  margin: 4px 8px;
+  border: 0;
+  background: var(--separador);
+}
+
+/* Páginas de conta e configurações. No celular, cada área é uma página com o
+   cartaz no topo e "Voltar" embaixo; o topo e o menu verde são do computador. */
+.ajustes-topo,
+.menu-ajustes {
+  display: none;
+}
+
+.ajustes-grade,
+.ajustes-conteudo,
+.area {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco);
+}
+
+.lista-areas {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.linha-area {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  margin: 0 -10px;
+  padding: 12px 10px;
+  border-bottom: 2px solid var(--separador);
+  color: inherit;
+  font-size: 17px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: background-color 0.25s ease;
+}
+
+.linha-area:last-child {
+  border-bottom: 0;
+}
+
+.linha-area .seta {
+  margin-left: auto;
+}
+
+.com-mouse .linha-area:hover,
+.linha-area:active {
+  border-radius: 16px;
+  border-bottom-color: transparent;
+  background: var(--realce);
+}
+
+/* Carteirinha de Minha conta. */
+.conta-grade {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco);
+}
+
+.carteirinha {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 220px;
+  padding: 18px;
+  border-radius: var(--raio-painel);
+  background: var(--forte);
+  color: var(--sobre-forte);
+}
+
+.carteirinha > canvas {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+}
+
+.carteirinha .pilula {
+  background: var(--sobre-forte);
+  color: var(--forte);
+}
+
+.carteirinha .pilula-contorno {
+  background: transparent;
+  color: var(--sobre-forte);
+}
+
+.carteirinha :focus-visible {
+  outline-color: var(--sobre-forte);
+}
+
+.carteirinha-nome {
+  max-width: calc(100% - 72px);
+  margin-top: 6px;
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+}
+
+/* Conta antiga, sem nome: um convite discreto no lugar do nome. */
+.carteirinha-nome.sem-nome {
+  font-size: 22px;
+  color: var(--sobre-forte-suave);
+}
+
+.carteirinha-email {
+  max-width: 100%;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sobre-forte-suave);
+  overflow-wrap: anywhere;
+}
+
+.carteirinha-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin-top: 6px;
+  animation: surgir 0.3s ease-out both;
+}
+
+.carteirinha-editor input {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.carteirinha-botoes {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.carteirinha .botao {
+  background: var(--sobre-forte);
+  color: var(--forte);
+}
+
+/* Cantinho do lápis: separado do resto da carteirinha por uma curva em S
+   desenhada com linha fina (desenho do Pedro). Ao clicar, ele encolhe para
+   dentro do canto e só então a edição do nome abre (minha-conta.js). */
+.cantinho {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+  width: 104px;
+  height: 104px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--sobre-forte);
+  cursor: pointer;
+  transform-origin: 100% 0;
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.35s ease;
+}
+
+.cantinho svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.cantinho-area {
+  fill: transparent;
+  transition: fill 0.25s ease;
+}
+
+.cantinho-curva {
+  fill: none;
+  stroke: var(--sobre-forte-suave);
+  stroke-width: 2;
+  opacity: 0.65;
+  transition: stroke 0.25s ease, opacity 0.25s ease;
+}
+
+.cantinho-lapis {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.25s ease;
+}
+
+.com-mouse .cantinho:hover .cantinho-area,
+.cantinho:focus-visible .cantinho-area,
+.cantinho:active .cantinho-area {
+  fill: color-mix(in srgb, var(--sobre-forte) 12%, transparent);
+}
+
+.com-mouse .cantinho:hover .cantinho-curva,
+.cantinho:focus-visible .cantinho-curva {
+  stroke: var(--sobre-forte);
+  opacity: 1;
+}
+
+.com-mouse .cantinho:hover .cantinho-lapis,
+.cantinho:focus-visible .cantinho-lapis {
+  transform: rotate(-12deg) scale(1.08);
+}
+
+/* O contorno de foco já está na área e na curva que acendem. */
+.cantinho:focus-visible {
+  outline: none;
+}
+
+.carteirinha.cantinho-fechado .cantinho {
+  transform: scale(0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Ações de Minha conta (por enquanto, alterar senha). */
+.acoes-conta {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.acao-conta-cabeca {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: calc(100% + 20px);
+  min-height: 56px;
+  margin: 0 -10px;
+  padding: 12px 10px;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  font-size: 17px;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.25s ease;
+}
+
+.com-mouse .acao-conta-cabeca:hover,
+.acao-conta-cabeca:active {
+  background: var(--realce);
+}
+
+.acao-conta-cabeca .seta {
+  transition: transform 0.25s ease;
+}
+
+.acao-conta-cabeca[aria-expanded='true'] .seta {
+  transform: rotate(180deg);
+}
+
+.acao-conta-corpo {
+  padding-bottom: 14px;
+}
+
+.aviso-conta {
+  font-weight: 700;
+}
+
+.aviso-conta:empty {
+  display: none;
+}
+
+/* Escolha de tema (versão simples, até os rascunhos da página Aparência). */
+.opcoes-tema {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.opcao-tema {
+  position: relative;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  margin: 0;
+  padding: 10px 14px;
+  border: 2px solid var(--campo);
+  border-radius: var(--raio-campo);
+  background: var(--campo);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.opcao-tema input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.opcao-tema:has(input:checked) {
+  border-color: var(--destaque);
+  background: var(--destaque);
+  color: var(--sobre-destaque);
+}
+
+.opcao-tema:has(input:focus-visible) {
+  outline: 3px solid var(--destaque);
+  outline-offset: 2px;
+}
+
+.com-mouse .opcao-tema:not(:has(input:checked)):hover {
+  border-color: var(--destaque);
+}
+
+.amostras {
+  display: flex;
+  margin-left: auto;
+}
+
+.amostra {
+  width: 20px;
+  height: 20px;
+  margin-left: -5px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--superficie);
+}
+
+@media (min-width: 560px) {
+  .opcoes-tema {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 /* Quem pediu "reduzir movimento" no aparelho: nada se mexe. ----------------------- */
@@ -1446,8 +1971,16 @@ input::placeholder {
   .onda,
   .esqueleto-bloco,
   .selo,
-  .dialogo[open] {
+  .dialogo[open],
+  .menu-conta,
+  .carteirinha-editor {
     animation: none;
+  }
+
+  .cantinho,
+  .cantinho-lapis,
+  .acao-conta-cabeca .seta {
+    transition: none;
   }
 
   .linha.destacada {
@@ -1559,5 +2092,106 @@ input::placeholder {
 
   .barra-acao::after {
     display: none;
+  }
+
+  /* Conta e configurações: "Voltar ao início" no topo, menu verde à esquerda
+     e a área escolhida à direita, com o mesmo cartaz cinza do celular. */
+  .ajustes-topo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+  }
+
+  .botao-redondo {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 2px solid var(--destaque);
+    border-radius: 50%;
+    color: var(--destaque);
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .com-mouse .botao-redondo:hover,
+  .botao-redondo:active {
+    background: var(--destaque);
+    color: var(--sobre-destaque);
+  }
+
+  .ajustes-grade {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    align-items: start;
+    gap: 16px;
+  }
+
+  .menu-ajustes {
+    position: sticky;
+    top: 16px;
+    display: flex;
+    flex-direction: column;
+    padding: 14px 10px 10px;
+    border-radius: var(--raio-painel);
+    background: var(--forte);
+    color: var(--sobre-forte);
+  }
+
+  .menu-ajustes :focus-visible {
+    outline-color: var(--sobre-forte);
+  }
+
+  .menu-ajustes-grupo {
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--sobre-forte-suave);
+  }
+
+  .menu-ajustes-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    color: inherit;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .com-mouse .menu-ajustes-item:hover {
+    background: color-mix(in srgb, var(--sobre-forte) 15%, transparent);
+  }
+
+  .menu-ajustes-item[aria-current='page'] {
+    background: var(--sobre-forte);
+    color: var(--forte);
+  }
+
+  .menu-ajustes-separador {
+    height: 2px;
+    margin: 8px;
+    border: 0;
+    background: color-mix(in srgb, var(--sobre-forte) 15%, transparent);
+  }
+
+  .ajustes-voltar,
+  #area-configuracoes {
+    display: none !important;
+  }
+
+  .conta-grade {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    align-items: start;
+    gap: 16px;
+  }
+
+  .carteirinha {
+    min-height: 250px;
   }
 }

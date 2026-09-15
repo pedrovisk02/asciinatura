@@ -26,7 +26,11 @@
   <link rel="icon" href="icone.svg" type="image/svg+xml">
   <link rel="preload" href="fontes/montserrat-800.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fontes/jetbrains-mono-500.woff2" as="font" type="font/woff2" crossorigin>
+  <!-- Aplica a paleta escolhida antes de a página aparecer, para a cor padrão
+       não piscar. Script comum e pequeno: módulos só rodariam depois. -->
+  <script src="js/tema-inicial.js"></script>
   <link rel="stylesheet" href="css/estilo.css">
+  <link rel="stylesheet" href="css/temas.css">
 </head>
 <body>
   <!-- Abertura: cobre a tela enquanto o app carrega (js/abertura.js). As letras
@@ -38,9 +42,9 @@
       <svg viewBox="0 0 64 64">
         <defs><clipPath id="recorte-logo-abertura"><rect width="64" height="64" rx="16"/></clipPath></defs>
         <g clip-path="url(#recorte-logo-abertura)">
-          <rect width="64" height="64" fill="#afafaf"/>
-          <circle cx="46" cy="44" r="26" fill="#ededed"/>
-          <rect x="8" y="10" width="24" height="9" rx="4.5" fill="#2b4239"/>
+          <rect class="logo-quadrado" width="64" height="64"/>
+          <circle class="logo-circulo" cx="46" cy="44" r="26"/>
+          <rect class="logo-etiqueta" x="8" y="10" width="24" height="9" rx="4.5"/>
         </g>
       </svg>
     </div>
@@ -58,14 +62,33 @@
     <header class="topo">
       <!-- Logo: ícone + nome. "Ascii" na letra das animações, "natura" na letra do app. -->
       <h1 class="marca">
-        <img src="icone.svg" alt="" width="26" height="26">
+        <!-- O ícone fica escrito aqui, e não como imagem, para as cores
+             seguirem a paleta escolhida (--logo-* no estilo). -->
+        <svg class="marca-icone" viewBox="0 0 64 64" width="26" height="26" aria-hidden="true">
+          <defs><clipPath id="recorte-logo-topo"><rect width="64" height="64" rx="16"/></clipPath></defs>
+          <g clip-path="url(#recorte-logo-topo)">
+            <rect class="logo-quadrado" width="64" height="64"/>
+            <circle class="logo-circulo" cx="46" cy="44" r="26"/>
+            <rect class="logo-etiqueta" x="8" y="10" width="24" height="9" rx="4.5"/>
+          </g>
+        </svg>
         <span class="marca-nome"><span class="marca-ascii">Ascii</span>natura</span>
       </h1>
-      <!-- Abre a gaveta da conta (e-mail e sair). Só aparece com alguém conectado. -->
-      <button type="button" id="botao-conta" class="botao-mini botao-com-icone" aria-haspopup="dialog" hidden>
-        <svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"/></svg>
-        Conta
-      </button>
+      <!-- Só aparece com alguém conectado. No celular abre a gaveta da conta
+           (#dialogo-conta); no computador, o menu suspenso logo abaixo. -->
+      <div class="topo-conta">
+        <button type="button" id="botao-conta" class="botao-mini botao-com-icone" aria-haspopup="true" aria-expanded="false" hidden>
+          <svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"/></svg>
+          Conta
+        </button>
+        <div id="menu-conta" class="menu-conta" hidden>
+          <p id="menu-conta-email" class="menu-conta-email"></p>
+          <a href="#/conta" class="menu-conta-item embaralha-ao-passar"><svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"/></svg><span>Minha conta</span><svg class="icone seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+          <a href="#/configuracoes" class="menu-conta-item embaralha-ao-passar"><svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4"/></svg><span>Configurações</span><svg class="icone seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+          <hr class="menu-conta-separador">
+          <button type="button" id="menu-conta-sair" class="menu-conta-item embaralha-ao-passar"><svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-2M10 12h11M18 9l3 3-3 3"/></svg><span>Sair</span></button>
+        </div>
+      </div>
     </header>
 
     <!-- Mensagens gerais, como "enviamos um link para o seu e-mail" -->
@@ -114,6 +137,9 @@
         <h2 class="titulo-cartaz">Criar conta</h2>
       </div>
       <form id="form-criar-conta" class="painel painel-branco formulario" method="post">
+        <label>Como quer ser chamado?
+          <input type="text" name="nome" autocomplete="nickname" maxlength="30" required>
+        </label>
         <label>E-mail
           <input type="email" name="email" autocomplete="email" required>
         </label>
@@ -330,7 +356,126 @@
 
       <!-- "Voltar", e não "Cancelar", para não confundir com cancelar a assinatura -->
       <div class="acoes-secundarias">
-        <button type="button" class="botao-texto" data-ir-para="inicio">Voltar</button>
+        <button type="button" class="botao-texto" data-voltar>Voltar</button>
+      </div>
+    </section>
+
+    <!-- Conta e configurações (bloco 1). Uma tela só, com uma "área" por
+         página: Minha conta (#/conta), a lista das configurações
+         (#/configuracoes, só no celular) e Aparência. No celular cada área é
+         uma página com "Voltar" embaixo; no computador, o menu verde à
+         esquerda troca de área e o "Voltar ao início" fica no topo. -->
+    <section id="tela-ajustes" class="tela tela-ajustes" hidden>
+      <div class="ajustes-topo">
+        <a href="#/" class="botao-redondo" aria-label="Voltar ao início"><svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></a>
+        <span aria-hidden="true">Voltar ao início</span>
+      </div>
+
+      <div class="ajustes-grade">
+        <nav class="menu-ajustes" aria-label="Conta e configurações">
+          <p class="menu-ajustes-grupo">Conta</p>
+          <a href="#/conta" class="menu-ajustes-item embaralha-ao-passar" data-area="conta"><svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"/></svg><span>Minha conta</span></a>
+          <hr class="menu-ajustes-separador">
+          <p class="menu-ajustes-grupo">Configurações</p>
+          <a href="#/configuracoes/aparencia" class="menu-ajustes-item embaralha-ao-passar" data-area="aparencia"><svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 1 1 0-18c5 0 9 3.6 9 8 0 2.2-1.8 4-4 4h-1.5a1.5 1.5 0 0 0-1.1 2.6A1.5 1.5 0 0 1 12 21zM7.5 10.5h.01M12 7.5h.01M16.5 10.5h.01"/></svg><span>Aparência</span></a>
+        </nav>
+
+        <div class="ajustes-conteudo">
+          <!-- Lista das áreas de configuração: só no celular. No computador o
+               menu verde faz esse papel. -->
+          <div id="area-configuracoes" class="area" hidden>
+            <div class="painel painel-cinza cartaz">
+              <span class="pilula">Sua conta</span>
+              <h2 class="titulo-cartaz">Configurações</h2>
+            </div>
+            <nav class="painel painel-branco lista-areas" aria-label="Áreas das configurações">
+              <a href="#/configuracoes/aparencia" class="linha-area"><svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 1 1 0-18c5 0 9 3.6 9 8 0 2.2-1.8 4-4 4h-1.5a1.5 1.5 0 0 0-1.1 2.6A1.5 1.5 0 0 1 12 21zM7.5 10.5h.01M12 7.5h.01M16.5 10.5h.01"/></svg><span>Aparência</span><svg class="icone seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+            </nav>
+          </div>
+
+          <div id="area-conta" class="area" hidden>
+            <div class="painel painel-cinza cartaz">
+              <span class="pilula">Sua conta</span>
+              <h2 class="titulo-cartaz">Minha conta</h2>
+            </div>
+
+            <div class="conta-grade">
+              <!-- Carteirinha: nome grande, e-mail e "membro desde", com manchas
+                   de letras atrás (js/ascii.js). O lápis fica num cantinho
+                   separado por uma curva; ao clicar, o cantinho se fecha e a
+                   edição abre (js/minha-conta.js). -->
+              <article id="carteirinha" class="carteirinha" aria-labelledby="carteirinha-nome">
+                <canvas aria-hidden="true"></canvas>
+                <span class="pilula">Nome</span>
+                <h3 id="carteirinha-nome" class="carteirinha-nome"></h3>
+                <form id="form-nome-cartao" class="carteirinha-editor" novalidate hidden>
+                  <label class="so-leitor" for="campo-nome-cartao">Como quer ser chamado?</label>
+                  <input id="campo-nome-cartao" name="nome" autocomplete="nickname" maxlength="30" aria-describedby="erro-nome-cartao">
+                  <p id="erro-nome-cartao" class="erro" role="alert"></p>
+                  <div class="carteirinha-botoes">
+                    <button type="submit" class="botao">Salvar</button>
+                    <button type="button" class="botao-texto" data-cancelar-nome>Cancelar</button>
+                  </div>
+                </form>
+                <p id="carteirinha-email" class="carteirinha-email"></p>
+                <span id="carteirinha-desde" class="pilula pilula-contorno"></span>
+                <button type="button" id="cantinho-lapis" class="cantinho" aria-label="Alterar nome">
+                  <svg viewBox="0 0 104 104" aria-hidden="true">
+                    <path class="cantinho-area" d="M24 0C37 0 40 9 40 25C40 43 50 52 68 52C87 52 104 60 104 80V0Z"/>
+                    <path class="cantinho-curva" d="M24 0C37 0 40 9 40 25C40 43 50 52 68 52C87 52 104 60 104 80"/>
+                    <path class="cantinho-lapis" d="M63 31h5l13.1-13.1a3.54 3.54 0 1 0-5-5L63 26v5M74.9 14.1l5 5"/>
+                  </svg>
+                </button>
+              </article>
+
+              <div class="painel painel-branco acoes-conta">
+                <div class="acao-conta">
+                  <button type="button" id="abrir-senha" class="acao-conta-cabeca" aria-expanded="false" aria-controls="form-senha">
+                    <span>Alterar senha</span><svg class="icone seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                  </button>
+                  <form id="form-senha" class="formulario acao-conta-corpo" method="post" hidden>
+                    <!-- O navegador pode sugerir e guardar a senha nova com estes nomes. -->
+                    <input type="text" name="usuario" autocomplete="username" hidden>
+                    <label>Senha atual
+                      <input type="password" name="atual" autocomplete="current-password" aria-describedby="erro-senha-atual">
+                    </label>
+                    <p class="erro-campo" id="erro-senha-atual"></p>
+                    <label>Nova senha (mínimo de 8 caracteres)
+                      <input type="password" name="nova" autocomplete="new-password" aria-describedby="erro-senha-nova">
+                    </label>
+                    <p class="erro-campo" id="erro-senha-nova"></p>
+                    <p class="erro" role="alert"></p>
+                    <button type="submit" class="botao botao-largo">Salvar senha</button>
+                  </form>
+                  <p id="aviso-senha" class="aviso-conta" role="status"></p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="area-aparencia" class="area" hidden>
+            <div class="painel painel-cinza cartaz">
+              <span class="pilula">Configurações</span>
+              <h2 class="titulo-cartaz">Aparência</h2>
+            </div>
+            <!-- Versão simples para testar as paletas; o visual final desta
+                 página ainda vai passar por rascunhos (parte 3 do bloco 1). -->
+            <div class="painel painel-branco formulario">
+              <fieldset class="campo-grupo">
+                <legend class="rotulo-campo">Paleta</legend>
+                <div id="opcoes-paleta" class="opcoes-tema"></div>
+              </fieldset>
+              <fieldset class="campo-grupo">
+                <legend class="rotulo-campo">Modo</legend>
+                <div id="opcoes-modo" class="opcoes-tema opcoes-modo"></div>
+              </fieldset>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="acoes-secundarias ajustes-voltar">
+        <button type="button" class="botao-texto" data-voltar>Voltar</button>
       </div>
     </section>
   </main>
@@ -362,10 +507,26 @@
       <span class="pilula">Sua conta</span>
       <h2 id="dialogo-conta-titulo" class="dialogo-titulo">Olá!</h2>
       <p id="conta-email" class="dialogo-texto"></p>
-      <button type="button" id="botao-sair" class="botao botao-contorno botao-largo">Sair da conta</button>
-      <!-- autofocus no "Fechar": um Enter sem querer não tira ninguém da conta -->
-      <button type="button" id="botao-fechar-conta" class="botao-texto" autofocus>Fechar</button>
+      <!-- autofocus em "Minha conta": um Enter sem querer abre uma página, e
+           não tira ninguém da conta. -->
+      <a href="#/conta" class="botao botao-contorno botao-largo botao-gaveta" autofocus><svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"/></svg><span>Minha conta</span><svg class="icone seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      <a href="#/configuracoes" class="botao botao-contorno botao-largo botao-gaveta"><svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4"/></svg><span>Configurações</span><svg class="icone seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      <button type="button" id="botao-sair" class="botao-texto">Sair da conta</button>
     </div>
+  </dialog>
+
+  <!-- Alterar o nome no celular: gaveta que sobe depois de o cantinho do lápis
+       se fechar (no computador o nome vira campo na própria carteirinha). -->
+  <dialog id="dialogo-nome" class="dialogo" aria-labelledby="dialogo-nome-titulo">
+    <form id="form-nome-gaveta" class="dialogo-conteudo painel-verde" novalidate>
+      <span class="pilula">Nome</span>
+      <h2 id="dialogo-nome-titulo" class="dialogo-titulo">Como quer ser chamado?</h2>
+      <label class="so-leitor" for="campo-nome-gaveta">Nome ou apelido</label>
+      <input id="campo-nome-gaveta" name="nome" autocomplete="nickname" maxlength="30" aria-describedby="erro-nome-gaveta">
+      <p id="erro-nome-gaveta" class="erro" role="alert"></p>
+      <button type="submit" class="botao botao-largo">Salvar</button>
+      <button type="button" class="botao-texto" data-cancelar-nome>Cancelar</button>
+    </form>
   </dialog>
 
   <!-- Ordem dos scripts: todos rodam depois que a página é lida, nesta ordem.

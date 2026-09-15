@@ -11,14 +11,17 @@ import {
 } from './auth.js';
 import { listarAssinaturas, criarAssinatura, atualizarAssinatura, apagarAssinatura } from './dados.js';
 import { resumoDoInicio, dataDeHoje, dataParaGravarNaEdicao, valorMensalEquivalente } from './calculos.js';
-import { validarAssinatura, valorParaOCampo, lerValor } from './validacao.js';
+import { validarAssinatura, valorParaOCampo, lerValor, validarNome } from './validacao.js';
 import { criarCalendario } from './calendario.js';
 import { mensagemDeErro, ehFalhaDeConexao, MENSAGEM_SEM_CONEXAO } from './erros.js';
 import { fecharAbertura } from './abertura.js';
-import { animarManchas, animarCirculo, reduzirMovimento } from './ascii.js';
+import { animarManchas, animarCirculo, reduzirMovimento, zonaDaForma } from './ascii.js';
 import { confirmarApagar } from './confirmacao.js';
 import { decifrarTextos, ligarInteracoes } from './interacoes.js';
-import { prepararDialogo } from './dialogos.js';
+import { lerRota, enderecoDaRota, rotaPai, ROTAS_DE_AJUSTES } from './rotas.js';
+import { prepararMenuConta, atualizarMenuConta, fecharTudoDaConta } from './menu-conta.js';
+import { prepararMinhaConta, mostrarConta, fecharEdicoesDaConta } from './minha-conta.js';
+import { prepararAparencia } from './aparencia.js';
 
 const telas = {
   carregando: document.querySelector('#tela-carregando'),
@@ -28,6 +31,7 @@ const telas = {
   novaSenha: document.querySelector('#tela-nova-senha'),
   inicio: document.querySelector('#tela-inicio'),
   formulario: document.querySelector('#tela-formulario'),
+  ajustes: document.querySelector('#tela-ajustes'),
 };
 
 const aviso = document.querySelector('#aviso');
@@ -125,8 +129,7 @@ function anunciar(texto) {
   anuncio.textContent = texto;
 }
 
-async function mostrarInicio(email) {
-  document.querySelector('#conta-email').textContent = email;
+async function mostrarInicio() {
   mostrarTela('inicio');
   await carregarInicio();
   // Os títulos só aparecem com a lista carregada.
@@ -145,7 +148,9 @@ async function comBotaoTravado(botao, mostrarErro, acao) {
   try {
     await acao();
   } catch (falha) {
-    console.error(falha);
+    // Aviso de validação do próprio app é esperado; só erro de verdade vai
+    // para o console.
+    if (!falha?.mensagemPronta) console.error(falha);
     mostrarErro(mensagemDeErro(falha));
   } finally {
     botao.disabled = false;
@@ -259,7 +264,7 @@ function criarCobrancaEmDestaque(assinatura, principal) {
 
   return criar(
     'article',
-    `painel cobranca ${principal ? 'painel-verde cobranca-principal' : 'painel-branco'}`,
+    `painel cobranca ${principal ? 'cobranca-principal' : 'cobranca-secundaria'}`,
     criar('p', 'cobranca-rotulo', principal ? 'Próxima cobrança' : 'Depois'),
     criar('p', dias === 0 ? 'cobranca-dias cobranca-dias-palavra' : 'cobranca-dias', numero),
     criar(
@@ -612,14 +617,19 @@ function abrirFormulario(assinatura = null, origem = null) {
   }
 
   atualizarValoresPorMes();
-  mostrarTela('formulario');
+  // A tela troca quando o endereço muda (aplicarRota), e assim o voltar do
+  // celular fecha o formulário em vez de sair do app.
+  formularioPedido = true;
+  navegar('assinatura');
 }
 
 async function voltarAoInicio(destaque = null) {
   assinaturaEmEdicao = null;
   formularioAssinatura.reset();
-  mostrarTela('inicio');
   mostrarAviso('');
+  // Tira o formulário do histórico: depois de salvar, o voltar do celular não
+  // reabre o formulário já salvo.
+  voltar();
   // Relê do banco em vez de só mexer na tela: assim a tela mostra o que
   // realmente ficou gravado.
   await carregarInicio({ destaque, contar: true });
@@ -724,8 +734,13 @@ ligarFormulario('#form-entrar', async (dados, formulario) => {
 });
 
 ligarFormulario('#form-criar-conta', async (dados, formulario) => {
+  const { nome, erro } = validarNome(dados.get('nome'));
+  if (erro) {
+    formulario.elements.namedItem('nome').focus();
+    throw Object.assign(new Error(erro), { mensagemPronta: erro });
+  }
   const email = dados.get('email');
-  const { precisaConfirmarEmail } = await criarConta(email, dados.get('senha'));
+  const { precisaConfirmarEmail } = await criarConta(email, dados.get('senha'), nome);
   formulario.reset();
 
   // Com a confirmação de e-mail desligada no Supabase, a conta já nasce com
@@ -748,10 +763,12 @@ ligarFormulario('#form-pedir-nova-senha', async (dados, formulario) => {
 });
 
 ligarFormulario('#form-nova-senha', async (dados, formulario) => {
-  const usuario = await definirNovaSenha(dados.get('senha'));
+  await definirNovaSenha(dados.get('senha'));
   definindoNovaSenha = false;
   formulario.reset();
-  mostrarInicio(usuario.email);
+  history.replaceState({ anterior: null }, '', enderecoDaRota('inicio'));
+  rotaAtual = 'inicio';
+  mostrarInicio();
   mostrarAviso('Senha alterada.');
 });
 
@@ -763,6 +780,10 @@ for (const botao of document.querySelectorAll('[data-acao="adicionar"]')) {
   botao.addEventListener('click', () => abrirFormulario(null, botao));
 }
 
+for (const botao of document.querySelectorAll('[data-voltar]')) {
+  botao.addEventListener('click', () => voltar());
+}
+
 for (const botao of document.querySelectorAll('[data-ir-para]')) {
   botao.addEventListener('click', () => {
     mostrarAviso('');
@@ -770,29 +791,168 @@ for (const botao of document.querySelectorAll('[data-ir-para]')) {
   });
 }
 
-// Gaveta da conta ---------------------------------------------------------------
+// Menu da conta, Minha conta e Aparência ------------------------------------------
 
-const botaoConta = document.querySelector('#botao-conta');
-const dialogoConta = document.querySelector('#dialogo-conta');
-prepararDialogo(dialogoConta);
-
-botaoConta.addEventListener('click', () => {
-  dialogoConta.showModal();
-  decifrarTextos(dialogoConta);
+prepararMenuConta({
+  aoSair: async () => {
+    try {
+      await sair();
+      // A troca para a tela de entrar acontece em acompanharSessao.
+    } catch (falha) {
+      console.error(falha);
+      mostrarAviso(mensagemDeErro(falha));
+    }
+  },
 });
 
-document.querySelector('#botao-fechar-conta').addEventListener('click', () => dialogoConta.close());
+prepararMinhaConta({
+  // O nome novo aparece também no menu da conta ("Olá, Pedro!").
+  aoMudarNome: (usuario) => {
+    if (sessaoAtual) {
+      sessaoAtual = { ...sessaoAtual, user: usuario };
+      atualizarMenuConta(sessaoAtual);
+    }
+  },
+  anunciarNaTela: anunciar,
+});
 
-document.querySelector('#botao-sair').addEventListener('click', async () => {
-  dialogoConta.close();
-  try {
-    await sair();
-    // A troca para a tela de entrar acontece em acompanharSessao.
-  } catch (falha) {
-    console.error(falha);
-    mostrarAviso(mensagemDeErro(falha));
+prepararAparencia();
+
+// Endereços das páginas ------------------------------------------------------------
+//
+// Cada página tem um endereço (#/conta, #/configuracoes/aparencia,
+// #/assinatura...). Trocar de página é mudar o endereço; quem troca a tela é
+// aplicarRota. Assim o voltar do celular, os botões de voltar e o F5 levam à
+// página certa. Cada item do histórico guarda de qual página se veio
+// ("anterior"), para o botão "Voltar" do app saber se pode voltar no histórico.
+
+const computador = window.matchMedia('(min-width: 880px)');
+const areas = {
+  conta: document.querySelector('#area-conta'),
+  configuracoes: document.querySelector('#area-configuracoes'),
+  aparencia: document.querySelector('#area-aparencia'),
+};
+
+let rotaAtual = null;
+let sessaoAtual = null;
+// Verdadeiro só entre abrirFormulario e a troca de tela: sem ele, chegar em
+// #/assinatura pelo histórico (sem um formulário preparado) volta ao início.
+let formularioPedido = false;
+
+function navegar(nome, { substituir = false } = {}) {
+  const endereco = enderecoDaRota(nome);
+  if (location.hash === endereco) {
+    aplicarRota(nome);
+  } else if (substituir) {
+    location.replace(endereco);
+  } else {
+    location.hash = endereco;
   }
+}
+
+function voltar() {
+  if (typeof history.state?.anterior === 'string') {
+    history.back();
+  } else {
+    navegar(rotaPai(rotaAtual) ?? 'inicio', { substituir: true });
+  }
+}
+
+window.addEventListener('hashchange', () => {
+  const nome = lerRota(location.hash);
+  // "#" que não é do app (link de e-mail do Supabase): não mexe.
+  if (nome === null) return;
+  // Item novo no histórico: anota de onde se veio.
+  if (history.state === null) history.replaceState({ anterior: rotaAtual }, '');
+  aplicarRota(nome);
 });
+
+// No computador a lista das configurações não existe: o menu verde faz esse
+// papel, então #/configuracoes abre direto a primeira área.
+computador.addEventListener('change', () => {
+  if (rotaAtual === 'configuracoes' && computador.matches) navegar('aparencia', { substituir: true });
+});
+
+function mostrarAjustes(area, { animar = true } = {}) {
+  const trocouDeTela = telaAtual !== 'ajustes';
+  for (const [nome, elemento] of Object.entries(areas)) elemento.hidden = nome !== area;
+  for (const item of document.querySelectorAll('.menu-ajustes-item')) {
+    if (item.dataset.area === area) item.setAttribute('aria-current', 'page');
+    else item.removeAttribute('aria-current');
+  }
+  if (area === 'conta' && sessaoAtual) mostrarConta(sessaoAtual.user);
+  else fecharEdicoesDaConta();
+
+  mostrarTela('ajustes', { animar: animar && trocouDeTela });
+  if (!trocouDeTela) {
+    // Trocando de área no computador: a área nova começa do topo e entra com
+    // o efeito, sem repetir a entrada da tela inteira.
+    window.scrollTo(0, 0);
+    if (animar) animarEntradaDaTela(areas[area]);
+  }
+  // O leitor de tela anuncia a página nova pelo título dela.
+  focar(primeiroTituloVisivel(areas[area]));
+}
+
+async function aplicarRota(nome) {
+  // Sem ninguém conectado (ou criando a senha nova), quem manda são as telas
+  // de acesso. O endereço fica guardado e é aberto depois de entrar.
+  if (!sessaoAtual || definindoNovaSenha) return;
+
+  fecharTudoDaConta();
+  rotaAtual = nome;
+
+  if (nome === 'assinatura') {
+    if (!formularioPedido) {
+      navegar('inicio', { substituir: true });
+      return;
+    }
+    formularioPedido = false;
+    mostrarTela('formulario');
+    return;
+  }
+
+  if (ROTAS_DE_AJUSTES.includes(nome)) {
+    if (nome === 'configuracoes' && computador.matches) {
+      navegar('aparencia', { substituir: true });
+      return;
+    }
+    mostrarAjustes(nome);
+    return;
+  }
+
+  fecharEdicoesDaConta();
+  mostrarTela('inicio');
+  // Entrou direto numa página de conta e agora foi para o início: a lista
+  // ainda não foi carregada.
+  if (diaDaTela === null && !carregandoPrimeiraVez) {
+    carregandoPrimeiraVez = true;
+    await carregarInicio();
+    carregandoPrimeiraVez = false;
+    if (focoPerdido()) focar(primeiroTituloVisivel(telas.inicio));
+    tocarEntrada();
+  }
+}
+
+let carregandoPrimeiraVez = false;
+
+// Primeira tela depois de entrar (ou de abrir o app já conectado): a do
+// endereço, se houver um; senão a inicial.
+async function abrirRotaDaSessao() {
+  const pedida = lerRota(location.hash);
+  const nome = pedida === 'assinatura' || pedida === null ? 'inicio' : pedida;
+  const final = nome === 'configuracoes' && computador.matches ? 'aparencia' : nome;
+  history.replaceState({ anterior: null }, '', enderecoDaRota(final));
+  rotaAtual = final;
+
+  if (final === 'inicio') {
+    mostrarInicio();
+    return;
+  }
+  mostrarAjustes(final, { animar: false });
+  await fecharAbertura();
+  if (!telas.ajustes.hidden) animarEntradaDaTela(telas.ajustes);
+}
 
 // Sessão ------------------------------------------------------------------------
 
@@ -814,6 +974,17 @@ for (const cartaz of document.querySelectorAll('.cartaz-ascii')) {
 }
 const cartazTotal = document.querySelector('.cartaz-total');
 animarCirculo(cartazTotal.querySelector('canvas'), cartazTotal);
+const carteirinha = document.querySelector('#carteirinha');
+// As letras ficam fora dos textos e de dentro da curva do cantinho do lápis,
+// mas passam em volta dele (pedido do Pedro: nada de quadrado escondendo a
+// animação). Com o cantinho fechado, para editar o nome, o canto fica livre.
+const cantinhoDoLapis = carteirinha.querySelector('.cantinho');
+animarManchas(carteirinha.querySelector('canvas'), [
+  ...[...carteirinha.children].filter((filho) => filho.tagName !== 'CANVAS' && filho !== cantinhoDoLapis),
+  zonaDaForma(cantinhoDoLapis.querySelector('.cantinho-area'), cantinhoDoLapis, {
+    ativa: () => !carteirinha.classList.contains('cantinho-fechado'),
+  }),
+]);
 
 // Inclinação 3D, círculo que acompanha o mouse e onda ao clicar, em todas as telas.
 ligarInteracoes();
@@ -833,18 +1004,22 @@ acompanharSessao((evento, sessao) => {
     return;
   }
 
+  // A sessão mais nova, mesmo quando é a mesma pessoa (o nome pode ter mudado).
+  sessaoAtual = sessao;
+  atualizarMenuConta(sessao);
+
   const usuario = sessao?.user.id ?? null;
   if (usuario === usuarioNaTela) return;
   usuarioNaTela = usuario;
 
-  // O botão da conta só existe para quem está conectado.
-  botaoConta.hidden = !sessao;
-  document.querySelector('#conta-email').textContent = sessao?.user.email ?? '';
-  if (!sessao && dialogoConta.open) dialogoConta.close();
-
   if (!sessao) {
     definindoNovaSenha = false;
     assinaturaEmEdicao = null;
+    fecharEdicoesDaConta();
+    rotaAtual = null;
+    // Ao sair, o endereço volta ao início: quem entrar depois começa pela
+    // tela inicial, e não pela página em que a outra pessoa estava.
+    if (evento === 'SIGNED_OUT') history.replaceState(null, '', location.pathname + location.search);
     // Apaga da página as assinaturas de quem saiu, para a próxima pessoa que
     // usar este navegador não ver nada que não é dela.
     limparInicio();
@@ -855,6 +1030,6 @@ acompanharSessao((evento, sessao) => {
   } else if (definindoNovaSenha) {
     mostrarDepoisDaAbertura('novaSenha');
   } else {
-    mostrarInicio(sessao.user.email);
+    abrirRotaDaSessao();
   }
 });

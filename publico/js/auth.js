@@ -17,11 +17,14 @@ export async function entrar(email, senha) {
   if (error) throw error;
 }
 
-export async function criarConta(email, senha) {
+// O nome vai junto, nos dados do usuário do Supabase (user_metadata). Serve só
+// para exibir ("Olá, Pedro!"): nenhuma regra de acesso depende dele, porque a
+// própria pessoa pode mudar esse campo.
+export async function criarConta(email, senha, nome) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password: senha,
-    options: { emailRedirectTo: ENDERECO_DO_APP },
+    options: { emailRedirectTo: ENDERECO_DO_APP, data: { nome } },
   });
   if (error) throw error;
 
@@ -41,6 +44,34 @@ export async function enviarLinkDeNovaSenha(email) {
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: ENDERECO_DO_APP,
   });
+  if (error) throw error;
+}
+
+// Nome guardado na conta, ou texto vazio para contas criadas antes do nome.
+export function nomeDoUsuario(usuario) {
+  const nome = usuario?.user_metadata?.nome;
+  return typeof nome === 'string' ? nome.trim() : '';
+}
+
+export async function alterarNome(nome) {
+  const { data, error } = await supabase.auth.updateUser({ data: { nome } });
+  if (error) throw error;
+  return data.user;
+}
+
+// Troca a senha de quem já está conectado. Antes, confere a senha atual
+// entrando de novo com ela: sem isso, qualquer pessoa com o app aberto num
+// aparelho esquecido poderia trocar a senha e tomar a conta.
+export async function trocarSenha(email, senhaAtual, novaSenha) {
+  const { error: erroDaConferencia } = await supabase.auth.signInWithPassword({ email, password: senhaAtual });
+  if (erroDaConferencia) {
+    if (erroDaConferencia.code === 'invalid_credentials') {
+      throw Object.assign(new Error('Senha atual incorreta'), { code: 'senha_atual_incorreta' });
+    }
+    throw erroDaConferencia;
+  }
+
+  const { error } = await supabase.auth.updateUser({ password: novaSenha });
   if (error) throw error;
 }
 

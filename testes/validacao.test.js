@@ -3,7 +3,7 @@
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { validarAssinatura, valorParaOCampo } from '../publico/js/validacao.js';
+import { validarAssinatura, valorParaOCampo, validarNome, validarTrocaDeSenha } from '../publico/js/validacao.js';
 import { mensagemDeErro, MENSAGEM_SEM_CONEXAO } from '../publico/js/erros.js';
 
 const valida = {
@@ -144,7 +144,51 @@ describe('mensagemDeErro', () => {
     assert.match(mensagemDeErro({ code: '23514', message: 'violates check constraint' }), /não foi aceito/);
   });
 
+  test('senha atual errada, na troca de senha em Minha conta', () => {
+    assert.equal(mensagemDeErro({ code: 'senha_atual_incorreta' }), 'Senha atual incorreta.');
+  });
+
   test('erro desconhecido tem frase genérica, sem detalhe técnico', () => {
     assert.equal(mensagemDeErro({ code: 'XYZ', message: 'stack trace...' }), 'Algo deu errado. Tente de novo em instantes.');
+  });
+});
+
+describe('validarNome', () => {
+  test('nome comum passa, sem os espaços das pontas', () => {
+    assert.deepEqual(validarNome('  Pedro  '), { nome: 'Pedro' });
+  });
+
+  test('vazio ou só espaços pede o nome', () => {
+    for (const texto of ['', '   ', null, undefined]) {
+      assert.equal(validarNome(texto).erro, 'Informe como quer ser chamado.');
+    }
+  });
+
+  test('até 30 caracteres passa; 31 é recusado', () => {
+    assert.equal(validarNome('a'.repeat(30)).nome, 'a'.repeat(30));
+    assert.equal(validarNome('a'.repeat(31)).erro, 'Use no máximo 30 caracteres.');
+  });
+
+  test('letras acentuadas e emoji contam como um caractere cada', () => {
+    assert.equal(validarNome('é'.repeat(30)).nome, 'é'.repeat(30));
+    assert.equal(validarNome('😀'.repeat(30)).nome, '😀'.repeat(30));
+  });
+});
+
+describe('validarTrocaDeSenha', () => {
+  test('senha atual e nova válida passam', () => {
+    assert.deepEqual(validarTrocaDeSenha({ atual: 'senha-antiga', nova: 'senha-nova-123' }), { valido: true, erros: {} });
+  });
+
+  test('campos vazios apontam os dois', () => {
+    assert.deepEqual(validarTrocaDeSenha({}).erros, { atual: 'Informe a senha atual.', nova: 'Informe a nova senha.' });
+  });
+
+  test('nova com menos de 8 caracteres é recusada', () => {
+    assert.equal(validarTrocaDeSenha({ atual: 'qualquer', nova: '1234567' }).erros.nova, 'Use pelo menos 8 caracteres.');
+  });
+
+  test('nova igual à atual é recusada', () => {
+    assert.equal(validarTrocaDeSenha({ atual: 'mesma-senha', nova: 'mesma-senha' }).erros.nova, 'A nova senha precisa ser diferente da atual.');
   });
 });
