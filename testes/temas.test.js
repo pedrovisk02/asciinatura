@@ -1,11 +1,15 @@
-// Testes das paletas: leitura do tema guardado, lista igual nos dois scripts,
-// cada paleta completa no temas.css e contraste de todas as combinações.
+// Testes da aparência: leitura do tema e do tamanho do texto guardados, listas
+// iguais nos dois scripts, cada paleta completa no temas.css, contraste de
+// todas as combinações e letras que acompanham o tamanho do texto.
 // Como rodar, na pasta do projeto: node --test
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { PALETAS, MODOS, TEMA_PADRAO, lerTemaSalvo, textoDoTema, temaValido } from '../publico/js/temas.js';
+import {
+  PALETAS, MODOS, TEMA_PADRAO, lerTemaSalvo, textoDoTema, temaValido,
+  TAMANHOS_DO_TEXTO, TAMANHO_PADRAO, lerTamanhoSalvo,
+} from '../publico/js/temas.js';
 
 const ler = (caminho) => readFileSync(new URL(caminho, import.meta.url), 'utf8');
 const estilo = ler('../publico/css/estilo.css');
@@ -34,11 +38,43 @@ describe('lerTemaSalvo', () => {
   });
 });
 
-describe('lista de paletas', () => {
+describe('lerTamanhoSalvo', () => {
+  test('tamanho conhecido é lido como está', () => {
+    for (const { id } of TAMANHOS_DO_TEXTO) assert.equal(lerTamanhoSalvo(id), id);
+  });
+
+  test('nada guardado ou valor estranho voltam para o normal', () => {
+    for (const texto of [null, undefined, '', 'gigante', 'MAIOR', '"maior"']) {
+      assert.equal(lerTamanhoSalvo(texto), 'normal', `texto: ${texto}`);
+    }
+    assert.equal(TAMANHO_PADRAO, 'normal');
+  });
+});
+
+describe('listas do script inicial', () => {
+  const lista = (nome) => JSON.parse(temaInicial.match(new RegExp(`var ${nome} = (\\[[^\\]]*\\])`))[1].replaceAll("'", '"'));
+
   test('o script inicial conhece exatamente as mesmas paletas e modos', () => {
-    const lista = (nome) => JSON.parse(temaInicial.match(new RegExp(`var ${nome} = (\\[[^\\]]*\\])`))[1].replaceAll("'", '"'));
     assert.deepEqual(lista('PALETAS'), PALETAS.map((paleta) => paleta.id));
     assert.deepEqual(lista('MODOS'), MODOS.map((modo) => modo.id));
+  });
+
+  test('o script inicial conhece exatamente os mesmos tamanhos do texto', () => {
+    assert.deepEqual(lista('TAMANHOS'), TAMANHOS_DO_TEXTO.map((tamanho) => tamanho.id));
+  });
+});
+
+describe('tamanho do texto no estilo', () => {
+  test('todo tamanho de letra usa rem, para acompanhar a escolha', () => {
+    const emPixels = [...estilo.matchAll(/font-size:\s*[^;]*\dpx[^;]*;/g), ...temas.matchAll(/font-size:\s*[^;]*\dpx[^;]*;/g)]
+      .map(([declaracao]) => declaracao);
+    assert.deepEqual(emPixels, []);
+  });
+
+  test('cada tamanho diferente do normal tem sua regra no estilo', () => {
+    for (const { id } of TAMANHOS_DO_TEXTO.filter((tamanho) => tamanho.id !== TAMANHO_PADRAO)) {
+      assert.match(estilo, new RegExp(`:root\\[data-tamanho-do-texto='${id}'\\]\\s*\\{\\s*font-size:\\s*\\d+%;`), id);
+    }
   });
 });
 

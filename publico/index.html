@@ -458,17 +458,27 @@
               <span class="pilula">Configurações</span>
               <h2 class="titulo-cartaz">Aparência</h2>
             </div>
-            <!-- Versão simples para testar as paletas; o visual final desta
-                 página ainda vai passar por rascunhos (parte 3 do bloco 1). -->
-            <div class="painel painel-branco formulario">
-              <fieldset class="campo-grupo">
+            <!-- "A1 · Cartões e botões": as opções são montadas pelo aparencia.js. -->
+            <div class="painel painel-branco">
+              <fieldset class="campo-grupo grupo-aparencia">
                 <legend class="rotulo-campo">Paleta</legend>
-                <div id="opcoes-paleta" class="opcoes-tema"></div>
+                <div id="opcoes-paleta" class="opcoes-paleta"></div>
               </fieldset>
-              <fieldset class="campo-grupo">
-                <legend class="rotulo-campo">Modo</legend>
-                <div id="opcoes-modo" class="opcoes-tema opcoes-modo"></div>
-              </fieldset>
+            </div>
+            <div class="aparencia-dupla">
+              <div class="painel painel-branco">
+                <fieldset class="campo-grupo grupo-aparencia">
+                  <legend class="rotulo-campo">Modo</legend>
+                  <div id="opcoes-modo" class="opcoes-segmento"></div>
+                </fieldset>
+              </div>
+              <div class="painel painel-branco">
+                <fieldset class="campo-grupo grupo-aparencia">
+                  <legend class="rotulo-campo">Tamanho do texto</legend>
+                  <div id="opcoes-tamanho" class="opcoes-segmento"></div>
+                </fieldset>
+                <p class="exemplo-do-tamanho" aria-hidden="true">Netflix · R$ 44,90 por mês</p>
+              </div>
             </div>
           </div>
         </div>

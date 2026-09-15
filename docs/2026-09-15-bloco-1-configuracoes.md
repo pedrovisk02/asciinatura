@@ -2,7 +2,7 @@
 
 **Base:** `docs/2026-09-13-design.md` (spec da Etapa 1). Este documento registra o que o Pedro decidiu, com rascunhos, em 14 e 15/09/2026.
 
-**Status:** partes 1 e 2 e a base dos temas decididas e em implementação. Partes 3 a 5 ainda passam por rascunho.
+**Status:** partes 1 a 3 decididas e implementadas (1 e 2 testadas pelo Pedro; 3 aguardando o teste dele). Partes 4 e 5 ainda passam por rascunho.
 
 ---
 
@@ -14,7 +14,7 @@ Dar ao app um lugar para a conta e para as preferências, sem opções que ainda
 
 1. Menu da "Conta" e formato das páginas.
 2. Minha conta, com o nome também na criação de conta.
-3. Aparência: paleta, claro ou escuro e tamanho do texto (visual final ainda em rascunho).
+3. Aparência: paleta, claro ou escuro e tamanho do texto.
 4. Tela inicial: saudação com o nome, esconder valores, ordenar a lista e janela do "Chegando" (7, 15 ou 30 dias).
 5. Privacidade, Sobre (sem link do GitHub) e Sugestões e problemas.
 
@@ -42,7 +42,14 @@ Ficam para os blocos deles, e só aparecem quando forem feitos: baixar dados e e
 - **Cores por papel:** o estilo deixa de usar nomes de cor (`--verde`, `--cinza`) e passa a usar papéis (`--fundo`, `--superficie`, `--destaque`, `--cartaz`, `--forte`, blocos de cobrança, tons das letras ASCII). Cada paleta só redefine os papéis. A Pôster verde clara continua idêntica à de hoje.
 - **Regras:** botões nunca vermelhos; contraste mínimo de 4,5:1 para texto comum e 3:1 para números grandes em cada combinação; o erro ganha um tom claro nos modos escuros.
 - **Onde fica guardado:** no próprio aparelho. Um script pequeno aplica o tema antes de a página aparecer, para a cor não piscar; o modo escuro só liga por escolha da pessoa.
-- **Enquanto a parte 3 não tem o visual final,** a página Aparência traz uma escolha simples de paleta e de claro ou escuro, para testar as cores.
+
+## Parte 3: Aparência
+
+- **Visual escolhido pelo Pedro: "A1 · Cartões e botões",** entre três rascunhos (os outros eram uma vitrine de mini telas e uma prévia ao vivo). Paletas em cartões com o nome e três bolinhas de cor (duas colunas no celular, quatro no computador; o escolhido fica na cor de destaque). Claro e escuro em dois botões lado a lado, com sol e lua. Tamanho do texto em três botões (A−, A e A+, com a letra crescendo), com uma linha de exemplo embaixo. No computador, "Modo" e "Tamanho do texto" ficam lado a lado.
+- **Muda no clique,** sem botão de salvar. Por baixo, cada grupo é um conjunto de botões de rádio de verdade: setas do teclado trocam a opção e o leitor de tela ouve "Menor", "Normal" e "Maior".
+- **Tamanho do texto:** Menor (90%), Normal (100%) e Maior (115%), guardado no aparelho, separado do tema, e aplicado antes de a página aparecer, como o tema. Todos os tamanhos de letra do estilo passaram a usar `rem` (decidido pelo Claude): mudar o tamanho da raiz muda todas as letras juntas, e o "Normal" também respeita o tamanho de letra escolhido no próprio navegador. As letras das animações ASCII não mudam, porque são enfeite. No tamanho normal, todas as letras fora da página Aparência ficaram idênticas às de antes (comparação automática no celular e no computador).
+- **Títulos dos cartazes** diminuem sozinhos quando a palavra mais longa não cabe na largura do cartaz. Com o texto maior, "Configurações" saía do cartaz no celular; a mesma regra protege celulares estreitos no tamanho normal.
+
 
 ## Segurança
 
@@ -52,7 +59,7 @@ Ficam para os blocos deles, e só aparecem quando forem feitos: baixar dados e e
 
 ## Testes
 
-- **Automáticos (Node):** leitura das rotas e página anterior, leitura do tema salvo e lista de paletas igual no script inicial e no estilo, validação do nome e da nova senha, texto de "membro desde".
+- **Automáticos (Node):** leitura das rotas e página anterior, leitura do tema e do tamanho do texto salvos, listas iguais no script inicial e no temas.js, nenhum tamanho de letra em pixels, validação do nome e da nova senha, texto de "membro desde".
 - **Na cópia com dados falsos:** as mesmas cores de antes na Pôster verde clara (comparação automática das cores calculadas de cada elemento), cada paleta e modo, menu no celular e no computador, voltar do celular, F5 em cada endereço, carteirinha, cantinho do lápis, alterar senha e nome na criação de conta.
 - **Pelo Pedro, na homologação:** o mesmo roteiro com a conta de teste, no computador e no celular.
 

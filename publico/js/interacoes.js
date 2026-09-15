@@ -163,7 +163,7 @@ function ligarMovimentoDoMouse() {
 // Onda ao clicar ----------------------------------------------------------------
 
 const COM_ONDA = '.botao, .botao-mini, .cartaz, .cobranca, .linha, .opcao-ciclo, .campo-data, '
-  + '.menu-conta-item, .menu-ajustes-item, .linha-area, .acao-conta-cabeca, .opcao-tema';
+  + '.menu-conta-item, .menu-ajustes-item, .linha-area, .acao-conta-cabeca, .opcao-tema, .opcao-segmento';
 
 // Um círculo cresce a partir do ponto do clique ou do toque, na cor contrária
 // à do elemento: claro sobre o verde, verde sobre o claro.

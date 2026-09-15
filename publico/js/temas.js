@@ -1,7 +1,7 @@
-// Lista de paletas e leitura do tema guardado no aparelho.
-// Funções puras: não mexem na tela nem no navegador. Testes em
-// testes/temas.test.js. Quem aplica o tema na página é o aparencia.js, e quem
-// aplica antes de a página aparecer é o tema-inicial.js.
+// Lista de paletas e de tamanhos do texto, e leitura do que ficou guardado no
+// aparelho. Funções puras: não mexem na tela nem no navegador. Testes em
+// testes/temas.test.js. Quem aplica na página é o aparencia.js, e quem aplica
+// antes de a página aparecer é o tema-inicial.js.
 
 // "amostras": três cores que representam a paleta nas bolinhas da escolha de
 // tema (as cores de verdade de cada papel ficam no css/temas.css).
@@ -48,4 +48,23 @@ export function lerTemaSalvo(texto) {
 
 export function textoDoTema(tema) {
   return JSON.stringify({ paleta: tema.paleta, modo: tema.modo });
+}
+
+// Tamanho do texto -------------------------------------------------------------
+// Guardado separado do tema: um valor estranho num não apaga a escolha do outro.
+// Quanto cada tamanho aumenta ou diminui fica no estilo.css
+// (:root[data-tamanho-do-texto]).
+
+export const TAMANHOS_DO_TEXTO = [
+  { id: 'menor', nome: 'Menor' },
+  { id: 'normal', nome: 'Normal' },
+  { id: 'maior', nome: 'Maior' },
+];
+
+export const TAMANHO_PADRAO = 'normal';
+
+export const CHAVE_DO_TAMANHO = 'asciinatura:tamanho-do-texto';
+
+export function lerTamanhoSalvo(texto) {
+  return TAMANHOS_DO_TEXTO.some((tamanho) => tamanho.id === texto) ? texto : TAMANHO_PADRAO;
 }

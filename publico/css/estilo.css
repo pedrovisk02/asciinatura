@@ -140,13 +140,25 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+/* Tamanho do texto (página Aparência). Todos os tamanhos de letra usam rem,
+   escritos como calc(13rem / 16), que dá 13px no tamanho normal. Como o rem
+   segue o tamanho da raiz, mudar a raiz muda todas as letras juntas, e o
+   "normal" respeita o tamanho de letra escolhido no próprio navegador. */
+:root[data-tamanho-do-texto='menor'] {
+  font-size: 90%;
+}
+
+:root[data-tamanho-do-texto='maior'] {
+  font-size: 115%;
+}
+
 body {
   margin: 0;
   background: var(--fundo);
   color: var(--texto);
   font-family: var(--fonte);
   font-weight: 500;
-  font-size: 16px;
+  font-size: calc(16rem / 16);
   line-height: 1.45;
 }
 
@@ -284,14 +296,14 @@ h2[tabindex='-1']:focus {
 
 .abertura-nome {
   position: relative;
-  font-size: 30px;
+  font-size: calc(30rem / 16);
   line-height: 1;
 }
 
 .abertura-frase {
   position: relative;
   font-family: var(--fonte-mono);
-  font-size: 13px;
+  font-size: calc(13rem / 16);
   color: var(--sobre-forte-suave);
 }
 
@@ -320,7 +332,7 @@ h2[tabindex='-1']:focus {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 20px;
+  font-size: calc(20rem / 16);
 }
 
 .marca-icone {
@@ -411,6 +423,9 @@ h2[tabindex='-1']:focus {
   align-items: flex-start;
   gap: 10px;
   isolation: isolate;
+  /* Permite medir a largura do próprio cartaz (unidade cqi), usada pelo
+     título e pelo total para nunca saírem dele. */
+  container-type: inline-size;
   transition: background-color 0.35s ease, color 0.35s ease, transform 0.25s ease-out;
 }
 
@@ -462,8 +477,11 @@ h2[tabindex='-1']:focus {
   background: transparent;
 }
 
+/* O título diminui se a palavra mais longa ("Configurações", cerca de 7,3
+   vezes o tamanho da letra) não couber na largura do cartaz, como em celulares
+   estreitos ou com o texto maior. */
 .titulo-cartaz {
-  font-size: 40px;
+  font-size: min(calc(40rem / 16), 13.5cqi);
   font-weight: 800;
   line-height: 0.95;
   letter-spacing: -0.03em;
@@ -481,13 +499,13 @@ h2[tabindex='-1']:focus {
   color: var(--sobre-destaque);
   border-radius: 999px;
   padding: 4px 12px;
-  font-size: 12px;
+  font-size: calc(12rem / 16);
   font-weight: 700;
   transition: background-color 0.35s ease, color 0.35s ease;
 }
 
 .rotulo {
-  font-size: 12px;
+  font-size: calc(12rem / 16);
   font-weight: 800;
   padding: 4px 8px 0;
 }
@@ -520,7 +538,7 @@ h2[tabindex='-1']:focus {
 .erro,
 .erro-campo {
   color: var(--erro);
-  font-size: 14px;
+  font-size: calc(14rem / 16);
   font-weight: 700;
 }
 
@@ -589,7 +607,7 @@ h2[tabindex='-1']:focus {
   border-radius: 999px;
   background: transparent;
   padding: 4px 12px;
-  font-size: 13px;
+  font-size: calc(13rem / 16);
   font-weight: 700;
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease;
@@ -647,7 +665,7 @@ label {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 13px;
+  font-size: calc(13rem / 16);
   font-weight: 800;
   margin-top: 8px;
 }
@@ -659,7 +677,7 @@ input {
   border-radius: var(--raio-campo);
   background: var(--campo);
   padding: 10px 14px;
-  font-size: 16px;
+  font-size: calc(16rem / 16);
   font-weight: 500;
 }
 
@@ -695,7 +713,7 @@ input::placeholder {
 
 .rotulo-campo {
   padding: 0;
-  font-size: 13px;
+  font-size: calc(13rem / 16);
   font-weight: 800;
 }
 
@@ -719,7 +737,7 @@ input::placeholder {
   border: 2px solid var(--campo);
   border-radius: var(--raio-campo);
   background: var(--campo);
-  font-size: 15px;
+  font-size: calc(15rem / 16);
   font-weight: 700;
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
@@ -735,7 +753,7 @@ input::placeholder {
 }
 
 .opcao-por-mes {
-  font-size: 12px;
+  font-size: calc(12rem / 16);
   font-weight: 500;
   color: var(--texto-suave);
 }
@@ -781,7 +799,7 @@ input::placeholder {
   border: 2px solid var(--campo);
   border-radius: var(--raio-campo);
   background: var(--campo);
-  font-size: 16px;
+  font-size: calc(16rem / 16);
   font-weight: 500;
   text-align: left;
   cursor: pointer;
@@ -820,7 +838,7 @@ input::placeholder {
 }
 
 .calendario-mes {
-  font-size: 17px;
+  font-size: calc(17rem / 16);
   font-weight: 800;
   letter-spacing: -0.02em;
 }
@@ -857,7 +875,7 @@ input::placeholder {
 
 .calendario-grade th {
   padding: 4px 0;
-  font-size: 11px;
+  font-size: calc(11rem / 16);
   font-weight: 800;
   color: var(--texto-suave);
 }
@@ -874,7 +892,7 @@ input::placeholder {
   border: 0;
   border-radius: 50%;
   background: transparent;
-  font-size: 14px;
+  font-size: calc(14rem / 16);
   font-weight: 700;
   cursor: pointer;
   transition: background-color 0.15s ease, color 0.15s ease;
@@ -921,9 +939,7 @@ input::placeholder {
 
 .cartaz-total {
   min-height: 230px;
-  /* Permite medir a largura do próprio bloco (unidade cqi, logo abaixo). */
-  container-type: inline-size;
-  --tamanho-maximo-do-total: 88px;
+  --tamanho-maximo-do-total: calc(88rem / 16);
 }
 
 /* O total diminui sozinho quando é longo, para nunca sair do bloco.
@@ -994,12 +1010,12 @@ input::placeholder {
 }
 
 .cobranca-rotulo {
-  font-size: 11px;
+  font-size: calc(11rem / 16);
   font-weight: 700;
 }
 
 .cobranca-dias {
-  font-size: 64px;
+  font-size: calc(64rem / 16);
   font-weight: 500;
   line-height: 0.9;
   letter-spacing: -0.06em;
@@ -1023,16 +1039,16 @@ input::placeholder {
 }
 
 .cobranca-secundaria .cobranca-dias {
-  font-size: 48px;
+  font-size: calc(48rem / 16);
   color: var(--dias-bloco-2);
 }
 
 .cobranca-dias-palavra {
-  font-size: 40px;
+  font-size: calc(40rem / 16);
 }
 
 .cobranca-info {
-  font-size: 13px;
+  font-size: calc(13rem / 16);
   font-weight: 700;
   line-height: 1.3;
   overflow-wrap: anywhere;
@@ -1101,7 +1117,7 @@ input::placeholder {
   color: var(--sobre-destaque);
   border-radius: 999px;
   padding: 1px 8px;
-  font-size: 11px;
+  font-size: calc(11rem / 16);
   font-weight: 700;
   animation: selo-some 2.8s both;
 }
@@ -1373,7 +1389,7 @@ input::placeholder {
 }
 
 .linha-detalhe {
-  font-size: 12px;
+  font-size: calc(12rem / 16);
   color: var(--texto-suave);
 }
 
@@ -1384,7 +1400,7 @@ input::placeholder {
 }
 
 .linha-valor small {
-  font-size: 11px;
+  font-size: calc(11rem / 16);
   font-weight: 700;
   color: var(--texto-suave);
 }
@@ -1410,7 +1426,7 @@ input::placeholder {
 }
 
 .titulo-painel {
-  font-size: 12px;
+  font-size: calc(12rem / 16);
   font-weight: 800;
   margin-bottom: 2px;
 }
@@ -1419,7 +1435,7 @@ input::placeholder {
 .canceladas summary {
   cursor: pointer;
   font-weight: 800;
-  font-size: 14px;
+  font-size: calc(14rem / 16);
   min-height: 24px;
 }
 
@@ -1435,7 +1451,7 @@ input::placeholder {
 }
 
 .acoes-edicao h3 {
-  font-size: 13px;
+  font-size: calc(13rem / 16);
   font-weight: 800;
 }
 
@@ -1491,7 +1507,7 @@ input::placeholder {
 }
 
 .dialogo-titulo {
-  font-size: 30px;
+  font-size: calc(30rem / 16);
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.03em;
@@ -1583,7 +1599,7 @@ a.botao {
 
 .menu-conta-email {
   padding: 6px 12px 8px;
-  font-size: 13px;
+  font-size: calc(13rem / 16);
   font-weight: 700;
   color: var(--texto-suave);
   overflow-wrap: anywhere;
@@ -1600,7 +1616,7 @@ a.botao {
   border-radius: 14px;
   background: transparent;
   color: inherit;
-  font-size: 15px;
+  font-size: calc(15rem / 16);
   font-weight: 700;
   text-align: left;
   text-decoration: none;
@@ -1656,7 +1672,7 @@ a.botao {
   padding: 12px 10px;
   border-bottom: 2px solid var(--separador);
   color: inherit;
-  font-size: 17px;
+  font-size: calc(17rem / 16);
   font-weight: 800;
   text-decoration: none;
   transition: background-color 0.25s ease;
@@ -1724,7 +1740,7 @@ a.botao {
 .carteirinha-nome {
   max-width: calc(100% - 72px);
   margin-top: 6px;
-  font-size: 40px;
+  font-size: calc(40rem / 16);
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.03em;
@@ -1733,13 +1749,13 @@ a.botao {
 
 /* Conta antiga, sem nome: um convite discreto no lugar do nome. */
 .carteirinha-nome.sem-nome {
-  font-size: 22px;
+  font-size: calc(22rem / 16);
   color: var(--sobre-forte-suave);
 }
 
 .carteirinha-email {
   max-width: 100%;
-  font-size: 14px;
+  font-size: calc(14rem / 16);
   font-weight: 700;
   color: var(--sobre-forte-suave);
   overflow-wrap: anywhere;
@@ -1755,7 +1771,7 @@ a.botao {
 }
 
 .carteirinha-editor input {
-  font-size: 24px;
+  font-size: calc(24rem / 16);
   font-weight: 800;
 }
 
@@ -1866,7 +1882,7 @@ a.botao {
   border: 0;
   border-radius: 16px;
   background: transparent;
-  font-size: 17px;
+  font-size: calc(17rem / 16);
   font-weight: 800;
   text-align: left;
   cursor: pointer;
@@ -1898,31 +1914,51 @@ a.botao {
   display: none;
 }
 
-/* Escolha de tema (versão simples, até os rascunhos da página Aparência). */
-.opcoes-tema {
+/* Página Aparência ("A1 · Cartões e botões"): paletas em cartões com o nome e
+   três bolinhas de cor; claro ou escuro e tamanho do texto em botões lado a
+   lado. Em todos, o botão de rádio continua existindo (teclado e leitor de
+   tela), invisível, e o cartão ou botão inteiro faz o papel dele. */
+.grupo-aparencia {
+  margin: 0;
+  gap: 0;
+}
+
+.grupo-aparencia .rotulo-campo {
+  margin-bottom: 10px;
+}
+
+.aparencia-dupla {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco);
+}
+
+.opcoes-paleta {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 6px;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
 
 .opcao-tema {
   position: relative;
   flex-direction: row;
   align-items: center;
-  gap: 10px;
-  min-height: 52px;
+  gap: 8px;
+  min-height: 56px;
   margin: 0;
-  padding: 10px 14px;
+  padding: 10px;
   border: 2px solid var(--campo);
   border-radius: var(--raio-campo);
   background: var(--campo);
-  font-size: 15px;
+  font-size: calc(14rem / 16);
   font-weight: 700;
+  line-height: 1.2;
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
-.opcao-tema input {
+.opcao-tema input,
+.opcao-segmento input {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -1935,7 +1971,8 @@ a.botao {
   color: var(--sobre-destaque);
 }
 
-.opcao-tema:has(input:focus-visible) {
+.opcao-tema:has(input:focus-visible),
+.opcao-segmento:has(input:focus-visible) {
   outline: 3px solid var(--destaque);
   outline-offset: 2px;
 }
@@ -1946,21 +1983,78 @@ a.botao {
 
 .amostras {
   display: flex;
+  flex-shrink: 0;
   margin-left: auto;
+  padding-left: 6px;
 }
 
+/* O contorno na cor da superfície separa as bolinhas entre si e do cartão
+   escolhido, mesmo quando uma delas tem a mesma cor dele. */
 .amostra {
-  width: 20px;
-  height: 20px;
-  margin-left: -5px;
+  width: 16px;
+  height: 16px;
+  margin-left: -6px;
   border-radius: 50%;
   box-shadow: 0 0 0 2px var(--superficie);
 }
 
-@media (min-width: 560px) {
-  .opcoes-tema {
-    grid-template-columns: 1fr 1fr;
-  }
+/* Botões lado a lado, dentro de uma faixa arredondada. */
+.opcoes-segmento {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--campo);
+}
+
+.opcao-segmento {
+  position: relative;
+  flex: 1 1 0;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 999px;
+  font-size: calc(15rem / 16);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.opcao-segmento:has(input:checked) {
+  background: var(--destaque);
+  color: var(--sobre-destaque);
+}
+
+.com-mouse .opcao-segmento:not(:has(input:checked)):hover {
+  box-shadow: inset 0 0 0 2px var(--destaque);
+}
+
+/* A−, A e A+ crescem junto com o tamanho que representam. */
+.sinal-do-tamanho {
+  font-weight: 800;
+  line-height: 1;
+}
+
+.sinal-menor {
+  font-size: calc(14rem / 16);
+}
+
+.sinal-normal {
+  font-size: calc(17rem / 16);
+}
+
+.sinal-maior {
+  font-size: calc(21rem / 16);
+}
+
+.exemplo-do-tamanho {
+  margin-top: 12px;
+  font-weight: 700;
+  color: var(--texto-suave);
 }
 
 /* Quem pediu "reduzir movimento" no aparelho: nada se mexe. ----------------------- */
@@ -2031,7 +2125,7 @@ a.botao {
   .cartaz-total {
     min-height: 260px;
     padding: 24px 28px;
-    --tamanho-maximo-do-total: 136px;
+    --tamanho-maximo-do-total: calc(136rem / 16);
   }
 
   /* Espaço para o número longo não encostar no botão do canto. */
@@ -2055,7 +2149,7 @@ a.botao {
   }
 
   .titulo-cartaz {
-    font-size: 52px;
+    font-size: min(calc(52rem / 16), 13.5cqi);
   }
 
   .dialogo {
@@ -2144,7 +2238,7 @@ a.botao {
 
   .menu-ajustes-grupo {
     padding: 4px 12px;
-    font-size: 12px;
+    font-size: calc(12rem / 16);
     font-weight: 800;
     color: var(--sobre-forte-suave);
   }
@@ -2193,5 +2287,15 @@ a.botao {
 
   .carteirinha {
     min-height: 250px;
+  }
+
+  .opcoes-paleta {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .aparencia-dupla {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
   }
 }
