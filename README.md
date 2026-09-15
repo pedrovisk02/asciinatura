@@ -2,6 +2,8 @@
 
 **Quanto custa o seu mês.** Um app web para acompanhar assinaturas recorrentes: quanto elas somam por mês e o que vai ser cobrado em seguida.
 
+**App no ar / Live app:** https://asciinatura.onrender.com
+
 [Português](#português) · [English](#english)
 
 ---
