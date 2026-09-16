@@ -411,6 +411,9 @@
           <hr class="menu-ajustes-separador">
           <p class="menu-ajustes-grupo">Configurações</p>
           <a href="#/configuracoes/aparencia" class="menu-ajustes-item embaralha-ao-passar" data-area="aparencia"><svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 1 1 0-18c5 0 9 3.6 9 8 0 2.2-1.8 4-4 4h-1.5a1.5 1.5 0 0 0-1.1 2.6A1.5 1.5 0 0 1 12 21zM7.5 10.5h.01M12 7.5h.01M16.5 10.5h.01"/></svg><span>Aparência</span></a>
+          <a href="#/configuracoes/privacidade" class="menu-ajustes-item embaralha-ao-passar" data-area="privacidade"><svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.4-3 8.4-7 10-4-1.6-7-5.6-7-10V6l7-3z"/><path d="M9.5 12.2l1.8 1.8 3.5-3.6"/></svg><span>Privacidade</span></a>
+          <a href="#/configuracoes/sobre" class="menu-ajustes-item embaralha-ao-passar" data-area="sobre"><svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6h.01"/></svg><span>Sobre</span></a>
+          <a href="#/configuracoes/sugestoes" class="menu-ajustes-item embaralha-ao-passar" data-area="sugestoes"><svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15a3 3 0 0 1-3 3H8l-4 3V6a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3z"/><path d="M8.5 9h7M8.5 12.5h4"/></svg><span>Sugestões e problemas</span></a>
         </nav>
 
         <div class="ajustes-conteudo">
@@ -423,6 +426,9 @@
             </div>
             <nav class="painel painel-branco lista-areas" aria-label="Áreas das configurações">
               <a href="#/configuracoes/aparencia" class="linha-area"><svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 1 1 0-18c5 0 9 3.6 9 8 0 2.2-1.8 4-4 4h-1.5a1.5 1.5 0 0 0-1.1 2.6A1.5 1.5 0 0 1 12 21zM7.5 10.5h.01M12 7.5h.01M16.5 10.5h.01"/></svg><span>Aparência</span><svg class="icone seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+              <a href="#/configuracoes/privacidade" class="linha-area"><svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.4-3 8.4-7 10-4-1.6-7-5.6-7-10V6l7-3z"/><path d="M9.5 12.2l1.8 1.8 3.5-3.6"/></svg><span>Privacidade</span><svg class="icone seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+              <a href="#/configuracoes/sobre" class="linha-area"><svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6h.01"/></svg><span>Sobre</span><svg class="icone seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+              <a href="#/configuracoes/sugestoes" class="linha-area"><svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15a3 3 0 0 1-3 3H8l-4 3V6a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3z"/><path d="M8.5 9h7M8.5 12.5h4"/></svg><span>Sugestões e problemas</span><svg class="icone seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
             </nav>
           </div>
 
@@ -513,6 +519,114 @@
                 <p class="exemplo-do-tamanho" aria-hidden="true">Netflix · R$ 44,90 por mês</p>
               </div>
             </div>
+          </div>
+
+          <div id="area-privacidade" class="area" hidden>
+            <div class="painel painel-cinza cartaz">
+              <span class="pilula">Configurações</span>
+              <h2 class="titulo-cartaz">Privacidade</h2>
+            </div>
+            <p class="abertura-da-area">Esta página descreve quais dados o Asciinatura utiliza, onde eles ficam guardados e o que permanece apenas neste aparelho. Atualizada em setembro de 2026.</p>
+
+            <section class="painel painel-branco">
+              <h3 class="titulo-painel">Dados da conta</h3>
+              <dl class="definicoes">
+                <div>
+                  <dt>E-mail</dt>
+                  <dd>Identifica a conta e é usado para entrar e para recuperar a senha.</dd>
+                </div>
+                <div>
+                  <dt>Nome ou apelido</dt>
+                  <dd>Aparece apenas na saudação do topo e em Minha conta.</dd>
+                </div>
+              </dl>
+            </section>
+
+            <section class="painel painel-branco">
+              <h3 class="titulo-painel">Dados que você cadastra</h3>
+              <p>De cada assinatura ficam registrados nome, valor, ciclo de cobrança, data da próxima cobrança, categoria e a situação (ativa ou cancelada).</p>
+              <p>Você pode alterar ou apagar qualquer assinatura a qualquer momento, e a mudança vale na hora.</p>
+            </section>
+
+            <section class="painel painel-branco">
+              <h3 class="titulo-painel">Onde os dados ficam</h3>
+              <p>As informações ficam num banco de dados em servidor de nuvem, acessado sempre por conexão criptografada.</p>
+              <p>O banco aplica uma regra de acesso por conta: mesmo que alguém consulte o serviço diretamente, só recebe as assinaturas da própria conta. A senha é guardada pelo serviço de login, em formato embaralhado, e o app nunca a armazena.</p>
+            </section>
+
+            <section class="painel painel-branco">
+              <h3 class="titulo-painel">Mensagens enviadas</h3>
+              <p>O que você escreve em "Sugestões e problemas" é guardado com a data, o tamanho da tela, o tamanho do texto e o tema, que ajudam a reproduzir o problema. Nenhum valor ou nome de assinatura acompanha a mensagem, e nenhuma outra conta consegue lê-la.</p>
+            </section>
+
+            <section class="painel painel-branco">
+              <h3 class="titulo-painel">Preferências deste aparelho</h3>
+              <p>Tema, tamanho do texto, valores escondidos, janela do "Chegando" e ordem da lista ficam guardados no próprio navegador. Não vão para o banco e não acompanham a conta em outro aparelho.</p>
+            </section>
+
+            <section class="painel painel-branco">
+              <h3 class="titulo-painel">Apagar os seus dados</h3>
+              <p>Cada assinatura pode ser apagada pelo app, e a remoção vale na hora.</p>
+              <p>Apagar a conta inteira e baixar uma cópia dos seus dados entram numa próxima atualização. Até lá, o pedido pode ser feito em "Sugestões e problemas".</p>
+            </section>
+
+            <section class="painel painel-branco">
+              <h3 class="titulo-painel">O que o app não faz</h3>
+              <ul class="lista-negativa">
+                <li>Não exibe anúncios nem utiliza rastreadores ou ferramentas de análise de comportamento.</li>
+                <li>Não vende, aluga nem compartilha seus dados com terceiros.</li>
+                <li>Não se conecta a bancos, cartões ou qualquer outro serviço financeiro: os valores são digitados por você.</li>
+              </ul>
+            </section>
+          </div>
+
+          <div id="area-sobre" class="area" hidden>
+            <div class="painel painel-cinza cartaz">
+              <span class="pilula">Configurações</span>
+              <h2 class="titulo-cartaz">Sobre</h2>
+            </div>
+            <p class="abertura-da-area">O Asciinatura reúne as cobranças que se repetem, calcula quanto elas somam por mês e mostra o que vem a seguir.</p>
+
+            <section class="painel painel-verde novidades">
+              <span class="pilula">Versão <span data-versao></span></span>
+              <h3 class="titulo-painel">Novidades</h3>
+              <ul class="lista-novidades">
+                <li>Oito paletas de cores, cada uma em claro e escuro, e três tamanhos de texto, na página Aparência.</li>
+                <li>Tela inicial com saudação pelo nome, botão para esconder os valores e escolha de quantos dias o "Chegando" mostra e de como a lista é ordenada.</li>
+                <li>Páginas de conta e de configurações, com nome ou apelido, alterar senha e este espaço para enviar sugestões.</li>
+              </ul>
+            </section>
+
+            <section class="painel painel-branco">
+              <h3 class="titulo-painel">Ficha técnica</h3>
+              <dl class="ficha">
+                <div><dt>Versão</dt><dd data-versao></dd></div>
+                <div><dt>Desenvolvimento</dt><dd>Pedro Henrique</dd></div>
+                <div><dt>Tecnologia</dt><dd>HTML, CSS e JavaScript, sem framework</dd></div>
+              </dl>
+            </section>
+
+          </div>
+
+          <div id="area-sugestoes" class="area" hidden>
+            <div class="painel painel-cinza cartaz">
+              <span class="pilula">Configurações</span>
+              <h2 class="titulo-cartaz">Sugestões e problemas</h2>
+            </div>
+            <p class="abertura-da-area">Relate um erro, uma dificuldade de uso ou uma ideia de melhoria. Cada mensagem é lida e ajuda a definir o que vem depois.</p>
+
+            <section class="painel painel-branco">
+              <h3 class="titulo-painel">Sua mensagem</h3>
+              <p>Descreva o que aconteceu e, se for um erro, em que tela e o que você fez antes. Quanto mais detalhe, mais rápido o conserto.</p>
+              <form id="form-sugestao" class="formulario" method="post" novalidate>
+                <label for="campo-sugestao">Mensagem</label>
+                <textarea id="campo-sugestao" name="mensagem" class="campo-mensagem" maxlength="1000" rows="5" aria-describedby="erro-sugestao"></textarea>
+                <p id="erro-sugestao" class="erro" role="alert"></p>
+                <button type="submit" class="botao botao-largo">Enviar mensagem</button>
+              </form>
+              <p id="aviso-sugestao" class="aviso-conta" role="status"></p>
+              <p class="observacao-da-area">Junto com a mensagem vão a data, o tamanho da tela, o tamanho do texto e o tema. Nenhum valor, nome de assinatura ou senha é enviado.</p>
+            </section>
           </div>
         </div>
       </div>

@@ -14,6 +14,9 @@ describe('lerRota', () => {
     assert.equal(lerRota('#/conta'), 'conta');
     assert.equal(lerRota('#/configuracoes'), 'configuracoes');
     assert.equal(lerRota('#/configuracoes/aparencia'), 'aparencia');
+    assert.equal(lerRota('#/configuracoes/privacidade'), 'privacidade');
+    assert.equal(lerRota('#/configuracoes/sobre'), 'sobre');
+    assert.equal(lerRota('#/configuracoes/sugestoes'), 'sugestoes');
     assert.equal(lerRota('#/assinatura'), 'assinatura');
   });
 
@@ -33,7 +36,7 @@ describe('lerRota', () => {
 
 describe('enderecoDaRota e rotaPai', () => {
   test('ida e volta: o endereço de cada rota é lido como a mesma rota', () => {
-    for (const nome of ['inicio', 'assinatura', 'conta', 'configuracoes', 'aparencia']) {
+    for (const nome of ['inicio', 'assinatura', 'conta', 'configuracoes', 'aparencia', 'privacidade', 'sobre', 'sugestoes']) {
       assert.equal(lerRota(enderecoDaRota(nome)), nome);
     }
   });
@@ -44,6 +47,9 @@ describe('enderecoDaRota e rotaPai', () => {
 
   test('"Voltar" sem histórico sobe um nível', () => {
     assert.equal(rotaPai('aparencia'), 'configuracoes');
+    assert.equal(rotaPai('privacidade'), 'configuracoes');
+    assert.equal(rotaPai('sobre'), 'configuracoes');
+    assert.equal(rotaPai('sugestoes'), 'configuracoes');
     assert.equal(rotaPai('configuracoes'), 'inicio');
     assert.equal(rotaPai('conta'), 'inicio');
     assert.equal(rotaPai('assinatura'), 'inicio');
@@ -51,6 +57,6 @@ describe('enderecoDaRota e rotaPai', () => {
   });
 
   test('conta e configurações abrem a tela de ajustes', () => {
-    assert.deepEqual(ROTAS_DE_AJUSTES, ['conta', 'configuracoes', 'aparencia']);
+    assert.deepEqual(ROTAS_DE_AJUSTES, ['conta', 'configuracoes', 'aparencia', 'privacidade', 'sobre', 'sugestoes']);
   });
 });

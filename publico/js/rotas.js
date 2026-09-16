@@ -10,10 +10,13 @@ const ROTAS = {
   conta: { endereco: '#/conta', pai: 'inicio' },
   configuracoes: { endereco: '#/configuracoes', pai: 'inicio' },
   aparencia: { endereco: '#/configuracoes/aparencia', pai: 'configuracoes' },
+  privacidade: { endereco: '#/configuracoes/privacidade', pai: 'configuracoes' },
+  sobre: { endereco: '#/configuracoes/sobre', pai: 'configuracoes' },
+  sugestoes: { endereco: '#/configuracoes/sugestoes', pai: 'configuracoes' },
 };
 
 // Rotas que abrem a tela de conta e configurações, e não a tela inicial.
-export const ROTAS_DE_AJUSTES = ['conta', 'configuracoes', 'aparencia'];
+export const ROTAS_DE_AJUSTES = ['conta', 'configuracoes', 'aparencia', 'privacidade', 'sobre', 'sugestoes'];
 
 // "#/conta" vira "conta". Endereço vazio vira "inicio". Um "#" que não começa
 // com "#/" não é do app: é o que o Supabase põe no endereço ao voltar de um

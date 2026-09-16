@@ -107,3 +107,15 @@ export function validarTrocaDeSenha({ atual = '', nova = '' } = {}) {
 export function valorParaOCampo(valor) {
   return valor.toFixed(2).replace('.', ',');
 }
+
+// Mensagem de "Sugestões e problemas". O limite é o mesmo do banco.
+export const TAMANHO_MAXIMO_DA_MENSAGEM = 1000;
+
+export function validarSugestao(texto) {
+  const mensagem = (texto ?? '').trim();
+  if (!mensagem) return { erro: 'Escreva a sua mensagem.' };
+  if ([...mensagem].length > TAMANHO_MAXIMO_DA_MENSAGEM) {
+    return { erro: `Use no máximo ${TAMANHO_MAXIMO_DA_MENSAGEM} caracteres.` };
+  }
+  return { mensagem };
+}

@@ -9,13 +9,13 @@ import {
   acompanharSessao,
   erroNoLinkRecebido,
 } from './auth.js';
-import { listarAssinaturas, criarAssinatura, atualizarAssinatura, apagarAssinatura } from './dados.js';
+import { listarAssinaturas, criarAssinatura, atualizarAssinatura, apagarAssinatura, enviarSugestao } from './dados.js';
 import {
   resumoDoInicio, dataDeHoje, dataParaGravarNaEdicao, valorMensalEquivalente, JANELAS_DO_CHEGANDO, ORDENS_DA_LISTA,
 } from './calculos.js';
 import { lerPreferenciasDoInicio, guardarPreferenciasDoInicio } from './preferencias.js';
 import { ligarEscolha } from './escolha.js';
-import { validarAssinatura, valorParaOCampo, lerValor, validarNome } from './validacao.js';
+import { validarAssinatura, valorParaOCampo, lerValor, validarNome, validarSugestao } from './validacao.js';
 import { criarCalendario } from './calendario.js';
 import { mensagemDeErro, ehFalhaDeConexao, MENSAGEM_SEM_CONEXAO } from './erros.js';
 import { fecharAbertura } from './abertura.js';
@@ -26,7 +26,8 @@ import { prepararDeslize, deslizarAbertura } from './deslizar.js';
 import { lerRota, enderecoDaRota, rotaPai, ROTAS_DE_AJUSTES } from './rotas.js';
 import { prepararMenuConta, atualizarMenuConta, fecharTudoDaConta } from './menu-conta.js';
 import { prepararMinhaConta, mostrarConta, fecharEdicoesDaConta } from './minha-conta.js';
-import { prepararAparencia } from './aparencia.js';
+import { prepararAparencia, temaAtual, tamanhoAtual } from './aparencia.js';
+import { VERSAO } from './versao.js';
 
 const telas = {
   carregando: document.querySelector('#tela-carregando'),
@@ -740,6 +741,48 @@ abrirCanceladas.addEventListener('click', () => {
   alternarCanceladas(abrirCanceladas.getAttribute('aria-expanded') !== 'true');
 });
 
+// Sobre e sugestões ----------------------------------------------------------------
+
+for (const lugar of document.querySelectorAll('[data-versao]')) lugar.textContent = VERSAO;
+
+const formSugestao = document.querySelector('#form-sugestao');
+const campoSugestao = document.querySelector('#campo-sugestao');
+const erroSugestao = document.querySelector('#erro-sugestao');
+const avisoSugestao = document.querySelector('#aviso-sugestao');
+
+function limparSugestao() {
+  formSugestao.reset();
+  erroSugestao.textContent = '';
+  avisoSugestao.textContent = '';
+}
+
+// O que vai junto da mensagem: só o que ajuda a reproduzir o problema.
+function contextoDaTela() {
+  const tema = temaAtual();
+  return `${window.innerWidth}x${window.innerHeight} · texto ${tamanhoAtual()} · tema ${tema.paleta} ${tema.modo}`;
+}
+
+formSugestao.addEventListener('submit', (evento) => {
+  evento.preventDefault();
+  // Um envio novo apaga o aviso do anterior, para não ficar "enviada" ao lado
+  // de uma mensagem de erro.
+  avisoSugestao.textContent = '';
+  const { mensagem, erro } = validarSugestao(campoSugestao.value);
+  erroSugestao.textContent = erro ?? '';
+  if (erro) {
+    campoSugestao.focus();
+    return;
+  }
+
+  const botao = formSugestao.querySelector('[type="submit"]');
+  comBotaoTravado(botao, (texto) => { erroSugestao.textContent = texto; }, async () => {
+    await enviarSugestao({ mensagem, contexto: contextoDaTela(), versao: VERSAO });
+    formSugestao.reset();
+    avisoSugestao.textContent = 'Mensagem enviada. Obrigado!';
+    anunciar('Mensagem enviada. Obrigado!');
+  });
+});
+
 // Escolhas da tela inicial ---------------------------------------------------------
 
 const painelChegando = document.querySelector('.painel-chegando');
@@ -1161,6 +1204,9 @@ const areas = {
   conta: document.querySelector('#area-conta'),
   configuracoes: document.querySelector('#area-configuracoes'),
   aparencia: document.querySelector('#area-aparencia'),
+  privacidade: document.querySelector('#area-privacidade'),
+  sobre: document.querySelector('#area-sobre'),
+  sugestoes: document.querySelector('#area-sugestoes'),
 };
 
 let rotaAtual = null;
@@ -1212,6 +1258,7 @@ function mostrarAjustes(area, { animar = true } = {}) {
   }
   if (area === 'conta' && sessaoAtual) mostrarConta(sessaoAtual.user);
   else fecharEdicoesDaConta();
+  if (area !== 'sugestoes') limparSugestao();
 
   mostrarTela('ajustes', { animar: animar && trocouDeTela });
   if (!trocouDeTela) {

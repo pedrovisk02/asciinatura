@@ -3,7 +3,7 @@
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { validarAssinatura, valorParaOCampo, validarNome, validarTrocaDeSenha } from '../publico/js/validacao.js';
+import { validarAssinatura, valorParaOCampo, validarNome, validarTrocaDeSenha, validarSugestao } from '../publico/js/validacao.js';
 import { mensagemDeErro, MENSAGEM_SEM_CONEXAO } from '../publico/js/erros.js';
 
 const valida = {
@@ -190,5 +190,26 @@ describe('validarTrocaDeSenha', () => {
 
   test('nova igual à atual é recusada', () => {
     assert.equal(validarTrocaDeSenha({ atual: 'mesma-senha', nova: 'mesma-senha' }).erros.nova, 'A nova senha precisa ser diferente da atual.');
+  });
+});
+
+describe('validarSugestao', () => {
+  test('mensagem comum passa, sem os espaços das pontas', () => {
+    assert.deepEqual(validarSugestao('  O botão some no celular  '), { mensagem: 'O botão some no celular' });
+  });
+
+  test('vazia ou só espaços pede o texto', () => {
+    for (const texto of ['', '   ', null, undefined]) {
+      assert.equal(validarSugestao(texto).erro, 'Escreva a sua mensagem.');
+    }
+  });
+
+  test('até 1000 caracteres passa; 1001 é recusada', () => {
+    assert.equal(validarSugestao('a'.repeat(1000)).mensagem, 'a'.repeat(1000));
+    assert.equal(validarSugestao('a'.repeat(1001)).erro, 'Use no máximo 1000 caracteres.');
+  });
+
+  test('emoji conta como um caractere', () => {
+    assert.equal(validarSugestao('😀'.repeat(1000)).mensagem, '😀'.repeat(1000));
   });
 });

@@ -2,7 +2,7 @@
 
 **Base:** `docs/2026-09-13-design.md` (spec da Etapa 1). Este documento registra o que o Pedro decidiu, com rascunhos, em 14 e 15/09/2026.
 
-**Status:** partes 1 a 4 decididas e implementadas (1 a 3 testadas pelo Pedro; 4 aguardando o teste dele). A parte 5 ainda passa por rascunho.
+**Status:** as cinco partes decididas e implementadas. Partes 1 a 4 testadas e aprovadas pelo Pedro; a 5 aguarda o SQL da tabela de sugestões e o teste dele.
 
 ---
 
@@ -71,6 +71,24 @@ Ficam para os blocos deles, e só aparecem quando forem feitos: baixar dados e e
 - **Linhas cinzas na mesma altura:** depois ele pediu a mesma simetria para os separadores das duas colunas. As linhas das duas listas passaram a ter a mesma altura, e os blocos do "Chegando" crescem só o necessário para a lista da esquerda começar onde uma linha da direita termina (medido no app: a distância entre as listas vira um número inteiro de linhas). No computador, os separadores das duas colunas caem na mesma altura e as duas colunas terminam exatamente juntas: os últimos pixels que sobram vão para a barra das canceladas (ou para o espaço acima do "Mostrar mais" do "Chegando"). A última linha à vista de cada lista perde o traço de baixo, porque o "Mostrar mais" já tem o dele e os dois juntos viravam uma linha dupla.
 - **Abrir as canceladas:** a tela desce junto com a abertura, acompanhando quadro a quadro, para a última linha não ficar embaixo da dobra nem atrás do botão de adicionar do celular.
 - **Onde fica guardado (decidido pelo Claude):** as três escolhas ficam no aparelho, como o tema, porque dizem respeito a quem está olhando para aquela tela. Mudar uma escolha redesenha a tela sem buscar as assinaturas de novo.
+
+## Parte 5: Privacidade, Sobre e Sugestões e problemas
+
+Três páginas novas dentro de Configurações, no mesmo formato das outras (cartaz no topo, painéis brancos, "Voltar" no celular e menu verde no computador), com endereços `#/configuracoes/privacidade`, `#/configuracoes/sobre` e `#/configuracoes/sugestoes`.
+
+- **Tom dos textos:** o Pedro pediu um tom mais profissional na segunda rodada de rascunho. Cada página abre com uma frase de apresentação, e o conteúdo vem em seções curtas.
+- **Privacidade:** dados da conta (e-mail e nome), dados que a pessoa cadastra, onde eles ficam (banco de dados em servidor de nuvem, conexão criptografada, regra de acesso por conta, senha guardada pelo serviço de login), as mensagens enviadas em Sugestões, as preferências que ficam só no aparelho, como apagar os seus dados e o que o app não faz (sem anúncio, sem rastreador, sem venda de dados, sem conexão com bancos ou cartões). Traz a data da última atualização.
+  - O Pedro pediu para o texto não citar o Supabase pelo nome. O serviço continua identificável para quem abre o código do site (a política de segurança do `index.html` cita o endereço do projeto), o que não é problema: esse endereço e a chave publicável são públicos por natureza, e a proteção real são as regras de acesso do banco.
+  - **Apagar os seus dados:** assinatura apagada vale na hora; apagar a conta inteira e baixar uma cópia dos dados entram no bloco 2 e, até lá, o pedido passa por "Sugestões e problemas".
+- **Sobre:** o que é o app, as novidades da versão e a ficha técnica (versão, desenvolvimento e tecnologia). Sem link do GitHub, como o Pedro decidiu. Ele tirou da página a explicação do nome, os créditos das fontes e as linhas de banco, login e tipografia da ficha.
+  - **Versões só com número** (escolha dele entre nomear com caracteres ASCII, com nomes de paleta ou só numerar): 1.0 é o app publicado em setembro de 2026 e 1.1 é este bloco. O número fica em `js/versao.js`, aparece em todo elemento com `data-versao` e vai junto de cada mensagem de sugestão.
+  - **Novidades em destaque (rascunhos D1, D2 e D3; o Pedro escolheu o D1):** bloco `.painel-verde .novidades` com a etiqueta da versão em cima do título e a lista `.lista-novidades`, cada item com um mais dentro de um círculo desenhado na própria cor do texto. Em tema claro o verde já se separa do painel branco (contraste medido de 6,4 a 20,6); em tema escuro as duas superfícies ficam parecidas (1,5 a 2,3), então o bloco leva um contorno em `--destaque`, que nas paletas claras é o próprio verde e some sozinho.
+- **Sugestões e problemas:** campo de mensagem (até 1000 caracteres) e botão "Enviar mensagem".
+  - **Onde vai parar (escolha do Pedro):** em vez de abrir o e-mail, a mensagem é gravada numa tabela nova, `sugestoes`, e só ele lê, pelo painel do Supabase. Ele havia escolhido o botão de e-mail e mudou de ideia ao ver que o endereço ficaria visível no código, que é público.
+  - **Segurança da tabela** (`banco/03-tabela-sugestoes.sql`, rodado pelo Pedro no painel): quem está logado só tem permissão de `insert`, e só nas colunas `mensagem`, `contexto` e `versao`; o dono vem de `auth.uid()` no próprio banco; não existe política de leitura, então nem quem escreveu consegue reler pelo app. Limite de 1000 caracteres no app e no banco.
+  - **O que acompanha a mensagem:** data, tamanho da janela, tamanho do texto e tema. Nenhum valor, nome de assinatura ou dado de conta.
+  - Depois de enviar, o campo limpa e aparece "Mensagem enviada. Obrigado!". Erro de envio mostra a frase em português de sempre.
+  - **Limite conhecido:** nada impede uma conta de enviar muitas mensagens seguidas; se virar problema, entra um limite por tempo.
 
 ## Segurança
 

@@ -66,3 +66,11 @@ export async function apagarAssinatura(id) {
     throw Object.assign(new Error('Nenhuma assinatura apagada'), { code: 'PGRST116' });
   }
 }
+
+// Sugestões e problemas: só escreve. A tabela não tem permissão de leitura
+// (banco/03-tabela-sugestoes.sql), então nada é devolvido; sem ".select()",
+// a biblioteca também não pede a linha de volta.
+export async function enviarSugestao({ mensagem, contexto, versao }) {
+  const { error } = await supabase.from('sugestoes').insert({ mensagem, contexto, versao });
+  if (error) throw error;
+}
