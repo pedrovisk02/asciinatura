@@ -259,6 +259,11 @@
           <div id="destaque-chegando" class="chegando-destaque"></div>
           <ul id="lista-chegando" class="lista lista-chegando"></ul>
           <p id="chegando-vazio" data-chave="vazio" hidden></p>
+          <!-- A lista mostra as primeiras cobranças; o resto abre aqui (app.js) -->
+          <button type="button" id="mostrar-mais-chegando" class="mostrar-mais" data-lista="chegando" aria-expanded="false" aria-controls="lista-chegando" hidden>
+            <span>Mostrar mais</span>
+            <svg class="icone seta-mostrar" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
         </section>
 
         <div class="coluna">
@@ -271,13 +276,22 @@
             </div>
             <ul id="lista-ativas" class="lista"></ul>
             <p id="ativas-vazio" hidden>Nenhuma assinatura ativa.</p>
+            <button type="button" id="mostrar-mais-todas" class="mostrar-mais" data-lista="todas" aria-expanded="false" aria-controls="lista-ativas" hidden>
+              <span>Mostrar mais</span>
+              <svg class="icone seta-mostrar" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
           </section>
 
-          <!-- Controle discreto: as canceladas continuam alcançáveis, mas não atrapalham -->
-          <details id="bloco-canceladas" class="painel painel-branco canceladas" hidden>
-            <summary>Ver canceladas (<span id="quantidade-canceladas"></span>)</summary>
-            <ul id="lista-canceladas" class="lista"></ul>
-          </details>
+          <!-- Barra discreta logo abaixo da lista: as canceladas ficam perto,
+               sem precisar rolar a página inteira (desenho do Pedro). -->
+          <section id="bloco-canceladas" class="painel painel-branco barra-canceladas" hidden>
+            <button type="button" id="abrir-canceladas" class="cabeca-canceladas" aria-expanded="false" aria-controls="lista-canceladas">
+              <svg class="icone seta-canceladas" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+              <span>Canceladas</span>
+              <span id="quantidade-canceladas" class="contador-canceladas"></span>
+            </button>
+            <ul id="lista-canceladas" class="lista" hidden></ul>
+          </section>
         </div>
       </div>
 

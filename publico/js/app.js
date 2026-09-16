@@ -22,7 +22,7 @@ import { fecharAbertura } from './abertura.js';
 import { animarManchas, animarCirculo, reduzirMovimento, zonaDaForma } from './ascii.js';
 import { confirmarApagar } from './confirmacao.js';
 import { decifrarTextos, decifrarElementos, ligarInteracoes } from './interacoes.js';
-import { prepararDeslize } from './deslizar.js';
+import { prepararDeslize, deslizarAbertura } from './deslizar.js';
 import { lerRota, enderecoDaRota, rotaPai, ROTAS_DE_AJUSTES } from './rotas.js';
 import { prepararMenuConta, atualizarMenuConta, fecharTudoDaConta } from './menu-conta.js';
 import { prepararMinhaConta, mostrarConta, fecharEdicoesDaConta } from './minha-conta.js';
@@ -187,6 +187,11 @@ const listas = {
 };
 
 const PERIODO_DO_CICLO = { mensal: 'por mês', trimestral: 'por trimestre', anual: 'por ano' };
+
+// Quantas linhas cada lista mostra antes do "Mostrar mais" (desenho do Pedro).
+// Com esses números, as duas colunas do computador terminam quase juntas.
+const LINHAS_ANTES_DE_MOSTRAR_MAIS = { chegando: 4, todas: 5 };
+const listaAberta = { chegando: false, todas: false };
 const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 
 // Primeira letra maiúscula, para textos montados a partir de partes (como a
@@ -398,8 +403,14 @@ function destacarLinha({ id, nome, selo }) {
   const linha = [...lista.children].find((item) => item.dataset.id === String(id));
   if (!linha) return;
 
-  // A cancelada vai para "Ver canceladas": abre o bloco para ela aparecer.
-  if (selo === 'cancelada') blocoCanceladas.open = true;
+  // A linha pode estar escondida: a cancelada fica na barra fechada, e uma
+  // ativa pode estar além do "Mostrar mais". Nos dois casos, abre para ela
+  // aparecer.
+  if (selo === 'cancelada') alternarCanceladas(true);
+  else if (linha.hidden) {
+    listaAberta.todas = true;
+    aplicarLimiteDaLista('todas');
+  }
 
   const marca = criar('span', 'selo', comPrimeiraMaiuscula(selo));
   linha.querySelector('.linha-nome').append(marca);
@@ -410,6 +421,105 @@ function destacarLinha({ id, nome, selo }) {
     linha.classList.remove('destacada');
     marca.remove();
   }, 3000);
+}
+
+// Valores alinhados numa coluna: a lista reserva a largura do maior valor
+// dela, e o estilo encosta todos à direita dessa largura.
+function alinharValores(lista) {
+  lista.style.removeProperty('--largura-do-valor');
+  let maior = 0;
+  for (const numero of lista.querySelectorAll('.linha-valor .valor-dinheiro')) {
+    maior = Math.max(maior, numero.getBoundingClientRect().width);
+  }
+  if (maior > 0) lista.style.setProperty('--largura-do-valor', `${Math.ceil(maior)}px`);
+}
+
+// Altura natural da primeira linha de uma lista (sem a altura combinada).
+function alturaDeUmaLinha(lista) {
+  const primeira = [...lista.children].find((linha) => linha.getClientRects().length > 0);
+  return primeira ? primeira.getBoundingClientRect().height : 0;
+}
+
+// Linhas cinzas das duas colunas na mesma altura (pedido do Pedro). Duas
+// coisas fazem isso: as linhas das duas listas passam a ter a mesma altura, e
+// os blocos do "Chegando" ocupam uma altura múltipla dela, de modo que a lista
+// da esquerda comece exatamente onde uma linha da direita termina.
+function alinharLinhasDasColunas() {
+  inicioConteudo.style.removeProperty('--altura-da-linha');
+  destaqueChegando.style.removeProperty('--altura-dos-blocos');
+
+  const altura = Math.max(alturaDeUmaLinha(listas.ativas), alturaDeUmaLinha(listas.chegando));
+  if (altura === 0) return;
+  inicioConteudo.style.setProperty('--altura-da-linha', `${altura}px`);
+
+  // No celular as listas ficam uma embaixo da outra, então não há o que alinhar.
+  if (!computador.matches || destaqueChegando.hidden || listas.chegando.children.length === 0) return;
+
+  // Quanto a lista da esquerda começa abaixo da lista da direita. Os blocos
+  // crescem só o necessário para essa distância virar um número inteiro de
+  // linhas: aí as linhas cinzas das duas colunas caem na mesma altura.
+  const distancia = listas.chegando.getBoundingClientRect().top - listas.ativas.getBoundingClientRect().top;
+  if (distancia <= 0) return;
+  const blocos = destaqueChegando.getBoundingClientRect().height;
+  const aumento = Math.ceil(distancia / altura) * altura - distancia;
+  destaqueChegando.style.setProperty('--altura-dos-blocos', `${Math.round(blocos + aumento)}px`);
+}
+
+// Os últimos pixels: com as listas fechadas, as duas colunas do computador
+// terminam na mesma altura. A sobra vai para a barra das canceladas (quando a
+// esquerda é mais alta) ou para o "Mostrar mais" do "Chegando".
+function acertarFimDasColunas() {
+  blocoCanceladas.style.removeProperty('--sobra-da-barra');
+  painelChegando.style.removeProperty('--sobra-do-chegando');
+  if (!computador.matches || listaAberta.chegando || listaAberta.todas) return;
+
+  const colunaDaDireita = painelTodas.parentElement;
+  const sobra = Math.round(
+    painelChegando.getBoundingClientRect().bottom - colunaDaDireita.getBoundingClientRect().bottom,
+  );
+  // Diferença grande é caso de mudar a quantidade de linhas, e não de empurrar
+  // pixels; aí as colunas ficam como estão.
+  if (sobra === 0 || Math.abs(sobra) > 40) return;
+
+  if (sobra > 0 && !blocoCanceladas.hidden) blocoCanceladas.style.setProperty('--sobra-da-barra', `${sobra}px`);
+  else if (sobra < 0) painelChegando.style.setProperty('--sobra-do-chegando', `${-sobra}px`);
+}
+
+// Quantas linhas o "Chegando" mostra fechado. No celular é o número fixo; no
+// computador, quantas couberem para a coluna da esquerda terminar junto com a
+// da direita (pelo menos duas), que é a simetria que o Pedro desenhou.
+function linhasDoChegando() {
+  const padrao = LINHAS_ANTES_DE_MOSTRAR_MAIS.chegando;
+  const linhas = [...listas.chegando.children];
+  const primeiraVisivel = linhas.find((linha) => linha.getClientRects().length > 0);
+  if (!computador.matches || !primeiraVisivel) return padrao;
+
+  const colunaDaDireita = painelTodas.parentElement;
+  const sobra = colunaDaDireita.getBoundingClientRect().height
+    - (painelChegando.getBoundingClientRect().height - listas.chegando.getBoundingClientRect().height);
+  // Arredonda para a quantidade mais próxima: uma linha a mais que passe um
+  // pouco deixa as colunas mais parelhas do que uma linha a menos sobrando.
+  const cabem = Math.round(sobra / primeiraVisivel.getBoundingClientRect().height);
+  return Math.min(Math.max(cabem, 2), linhas.length);
+}
+
+// Mostra só as primeiras linhas; o resto abre no "Mostrar mais". O botão some
+// quando a lista já cabe inteira.
+function aplicarLimiteDaLista(qual) {
+  const lista = listas[qual === 'todas' ? 'ativas' : 'chegando'];
+  const botao = document.querySelector(`#mostrar-mais-${qual}`);
+  const limite = qual === 'chegando' ? linhasDoChegando() : LINHAS_ANTES_DE_MOSTRAR_MAIS.todas;
+  const linhas = [...lista.children];
+  const aberta = listaAberta[qual];
+
+  linhas.forEach((linha, posicao) => {
+    linha.hidden = !aberta && posicao >= limite;
+  });
+
+  const escondidas = Math.max(0, linhas.length - limite);
+  botao.hidden = escondidas === 0;
+  botao.setAttribute('aria-expanded', String(aberta));
+  botao.querySelector('span').textContent = aberta ? 'Mostrar menos' : `Mostrar mais ${escondidas}`;
 }
 
 function mostrarChegando(chegando) {
@@ -432,6 +542,7 @@ function mostrarChegando(chegando) {
   );
 
   document.querySelector('#chegando-vazio').hidden = chegando.length > 0;
+  alinharValores(listas.chegando);
 }
 
 function limparInicio() {
@@ -440,6 +551,8 @@ function limparInicio() {
   totalNaTela = null;
   diaDaTela = null;
   assinaturasNaTela = null;
+  listaAberta.chegando = false;
+  listaAberta.todas = false;
   origemDoFormulario = null;
   rolagemDoInicio = 0;
   estadoInicio.textContent = '';
@@ -552,6 +665,7 @@ function mostrarResumo(resumo, quantidadeTotal, contarDe = null) {
     }),
   );
   document.querySelector('#ativas-vazio').hidden = resumo.ativas.length > 0;
+  alinharValores(listas.ativas);
 
   blocoCanceladas.hidden = resumo.canceladas.length === 0;
   document.querySelector('#quantidade-canceladas').textContent = resumo.canceladas.length;
@@ -562,7 +676,69 @@ function mostrarResumo(resumo, quantidadeTotal, contarDe = null) {
         botoes: [botaoReativar, botaoEditar],
       })),
   );
+
+  // Com as duas listas montadas: linhas na mesma altura, depois quantas linhas
+  // cada uma mostra e, por fim, os últimos pixels para as colunas terminarem
+  // juntas.
+  alinharLinhasDasColunas();
+  aplicarLimiteDaLista('todas');
+  aplicarLimiteDaLista('chegando');
+  acertarFimDasColunas();
 }
+
+// "Mostrar mais" e canceladas -------------------------------------------------------
+
+const abrirCanceladas = document.querySelector('#abrir-canceladas');
+
+
+for (const botao of document.querySelectorAll('.mostrar-mais')) {
+  botao.addEventListener('click', () => {
+    const qual = botao.dataset.lista;
+    const painel = botao.closest('.painel');
+    // As linhas que chegam (ou que saem) deslizam até o lugar, como nas
+    // outras trocas da tela inicial.
+    const deslizar = prepararDeslize(painel);
+    listaAberta[qual] = !listaAberta[qual];
+    aplicarLimiteDaLista(qual);
+    acertarFimDasColunas();
+    deslizar();
+  });
+}
+
+function alternarCanceladas(abrir) {
+  abrirCanceladas.setAttribute('aria-expanded', String(abrir));
+  deslizarAbertura(listas.canceladas, abrir);
+  if (abrir) acompanharAsCanceladas();
+}
+
+// Ao abrir, a tela desce junto com as canceladas, acompanhando a abertura
+// quadro a quadro. De uma vez só não funciona: no meio da animação a página
+// ainda é curta e a rolagem para no fim dela.
+function acompanharAsCanceladas() {
+  // No celular, o botão de adicionar fica preso no pé e taparia a última linha.
+  const folgaEmbaixo = computador.matches ? 24 : 96;
+  const quantoFalta = () => blocoCanceladas.getBoundingClientRect().bottom + folgaEmbaixo - window.innerHeight;
+
+  if (reduzirMovimento()) {
+    const faltando = quantoFalta();
+    if (faltando > 0) window.scrollBy(0, faltando);
+    return;
+  }
+
+  const comecou = performance.now();
+  const passo = () => {
+    const faltando = quantoFalta();
+    // Desce no máximo um pedaço por quadro, para a tela acompanhar a abertura
+    // em vez de pular direto para o fim.
+    if (faltando > 0) window.scrollBy(0, Math.min(faltando, 24));
+    if (performance.now() - comecou < 600) requestAnimationFrame(passo);
+  };
+  requestAnimationFrame(passo);
+}
+
+abrirCanceladas.addEventListener('click', () => {
+  alternarCanceladas(abrirCanceladas.getAttribute('aria-expanded') !== 'true');
+});
 
 // Escolhas da tela inicial ---------------------------------------------------------
 
@@ -971,6 +1147,16 @@ prepararAparencia();
 // ("anterior"), para o botão "Voltar" do app saber se pode voltar no histórico.
 
 const computador = window.matchMedia('(min-width: 880px)');
+
+// Virar o celular ou mudar o tamanho da janela troca o formato das colunas:
+// a lista do "Chegando" se acerta de novo, para elas terminarem juntas.
+computador.addEventListener('change', () => {
+  if (telas.inicio.hidden || inicioConteudo.hidden) return;
+  alinharLinhasDasColunas();
+  aplicarLimiteDaLista('todas');
+  aplicarLimiteDaLista('chegando');
+  acertarFimDasColunas();
+});
 const areas = {
   conta: document.querySelector('#area-conta'),
   configuracoes: document.querySelector('#area-configuracoes'),

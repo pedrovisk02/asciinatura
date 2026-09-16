@@ -1079,6 +1079,23 @@ input::placeholder {
   border-bottom: 0;
 }
 
+/* As linhas das duas listas da tela inicial têm a mesma altura, e os blocos do
+   "Chegando" ocupam uma altura múltipla dela (app.js). Assim, no computador,
+   as linhas cinzas das duas colunas ficam na mesma altura. */
+.lista .linha {
+  min-height: var(--altura-da-linha, auto);
+}
+
+/* A última linha à vista não precisa de traço: o "Mostrar mais" logo abaixo já
+   tem o dele, e os dois juntos viravam uma linha dupla. */
+.lista .linha:has(+ .linha[hidden]) {
+  border-bottom: 0;
+}
+
+.chegando-destaque {
+  min-height: var(--altura-dos-blocos, auto);
+}
+
 /* A última linha guarda espaço embaixo para o destaque; a lista devolve parte
    dele ao painel, para a distância até a borda não crescer. */
 .painel > .lista:not(:empty) {
@@ -1447,16 +1464,97 @@ input::placeholder {
   margin-bottom: -4px;
 }
 
-/* "Ver canceladas": discreto, no fim. */
-.canceladas summary {
-  cursor: pointer;
+/* "Mostrar mais": fecha o painel, como no desenho do Pedro. A lista mostra as
+   primeiras assinaturas e o resto abre aqui, deslizando. Ocupa a largura toda
+   do painel, incluindo o espaço interno, com um traço em cima separando. */
+.mostrar-mais {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: calc(100% + 36px);
+  min-height: 44px;
+  margin: 4px -18px -18px;
+  padding: 10px;
+  border: 0;
+  border-top: 2px solid var(--separador);
+  border-radius: 0 0 var(--raio-painel) var(--raio-painel);
+  background: transparent;
+  font-size: calc(13rem / 16);
   font-weight: 800;
-  font-size: calc(14rem / 16);
-  min-height: 24px;
+  cursor: pointer;
+  transition: background-color 0.25s ease;
 }
 
-.canceladas[open] summary {
-  margin-bottom: 4px;
+.com-mouse .mostrar-mais:hover,
+.mostrar-mais:active {
+  background: var(--realce);
+}
+
+.seta-mostrar,
+.seta-canceladas {
+  transition: transform 0.3s ease;
+}
+
+.mostrar-mais[aria-expanded='true'] .seta-mostrar {
+  transform: rotate(180deg);
+}
+
+/* Canceladas: barra fechada logo abaixo de "Todas", com a seta e a
+   quantidade. Abre e fecha deslizando (deslizarAbertura). */
+.barra-canceladas {
+  padding: 0 18px;
+}
+
+/* Os últimos pixels para as duas colunas terminarem na mesma altura (app.js):
+   a barra das canceladas ganha a sobra, ou o "Mostrar mais" do "Chegando". */
+.barra-canceladas .cabeca-canceladas {
+  min-height: calc(52px + var(--sobra-da-barra, 0px));
+}
+
+.painel-chegando .mostrar-mais {
+  margin-top: calc(4px + var(--sobra-do-chegando, 0px));
+}
+
+.cabeca-canceladas {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: calc(100% + 20px);
+  min-height: 52px;
+  margin: 0 -10px;
+  padding: 12px 10px;
+  border: 0;
+  border-radius: var(--raio-painel);
+  background: transparent;
+  font-size: calc(14rem / 16);
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.25s ease;
+}
+
+.com-mouse .cabeca-canceladas:hover,
+.cabeca-canceladas:active {
+  background: var(--realce);
+}
+
+.cabeca-canceladas[aria-expanded='true'] .seta-canceladas {
+  transform: rotate(90deg);
+}
+
+.contador-canceladas {
+  margin-left: auto;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--campo);
+  font-size: calc(12rem / 16);
+}
+
+.barra-canceladas .lista {
+  padding-bottom: 12px;
 }
 
 /* Outras ações da edição. */
@@ -1684,17 +1782,14 @@ a.botao {
   letter-spacing: 0.06em;
 }
 
-/* Nas linhas, os pontinhos ocupam a largura de quatro algarismos: ao esconder,
-   eles se embaralham em algarismos (interacoes.js), e o espaço já reservado
-   impede o nome ao lado de mudar de largura no meio do efeito. Em "Todas",
-   ficam encostados no "/mês". */
-.linha-valor .valor-escondido .valor-dinheiro {
+/* Valores alinhados numa coluna: cada lista reserva a largura do maior valor
+   dela (--largura-do-valor, medida no app.js) e o número fica encostado à
+   direita, então "6,00" e "222,00" começam e terminam no mesmo lugar. A
+   largura mínima também cabe os pontinhos do valor escondido, que se
+   embaralham em quatro algarismos (interacoes.js). */
+.linha-valor .valor-dinheiro {
   display: inline-block;
-  /* Quatro algarismos mais o espaçamento entre letras dos pontinhos. */
-  min-width: calc(4ch + 0.5em);
-}
-
-.linha-valor:has(small) .valor-escondido .valor-dinheiro {
+  min-width: max(var(--largura-do-valor, 0px), calc(4ch + 0.5em));
   text-align: right;
 }
 
@@ -2278,7 +2373,9 @@ a.botao {
   .cantinho,
   .cantinho-lapis,
   .acao-conta-cabeca .seta,
-  .risco-do-olho {
+  .risco-do-olho,
+  .seta-mostrar,
+  .seta-canceladas {
     transition: none;
   }
 

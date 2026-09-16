@@ -19,7 +19,7 @@ const TEXTOS_DECIFRAVEIS = [
   '.numero-total', '.titulo-painel',
   '.cobranca-rotulo', '.cobranca-dias', '.cobranca-info',
   '.linha-nome', '.linha-detalhe', '.linha-valor',
-  '.canceladas summary', '.acoes-edicao h3', '.dialogo-titulo', '.dialogo-texto',
+  '.mostrar-mais', '.cabeca-canceladas', '.acoes-edicao h3', '.dialogo-titulo', '.dialogo-texto',
   '.menu-conta-email', '.menu-conta-item', '.menu-ajustes-grupo', '.menu-ajustes-item', '.linha-area',
   '.carteirinha-nome', '.carteirinha-email', '.acao-conta-cabeca', '.aviso-conta',
 ].join(', ');
@@ -262,7 +262,8 @@ function ligarMovimentoDoMouse() {
 // Onda ao clicar ----------------------------------------------------------------
 
 const COM_ONDA = '.botao, .botao-mini, .cartaz, .cobranca, .linha, .opcao-ciclo, .campo-data, '
-  + '.menu-conta-item, .menu-ajustes-item, .linha-area, .acao-conta-cabeca, .opcao-tema, .opcao-segmento, .botao-icone';
+  + '.menu-conta-item, .menu-ajustes-item, .linha-area, .acao-conta-cabeca, .opcao-tema, .opcao-segmento, .botao-icone, '
+  + '.mostrar-mais, .cabeca-canceladas';
 
 // Um círculo cresce a partir do ponto do clique ou do toque, na cor contrária
 // à do elemento: claro sobre o verde, verde sobre o claro.
