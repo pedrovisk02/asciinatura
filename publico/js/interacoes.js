@@ -10,12 +10,13 @@ import { reduzirMovimento } from './ascii.js';
 // Decodificação ASCII ----------------------------------------------------------
 
 const LETRAS_SORTEIO = 'ASCINTUR';
+const LETRAS_SORTEIO_MINUSCULAS = 'ascintur';
 const ALGARISMOS = '0123456789';
 
 // Onde há texto para decifrar, em qualquer tela.
 const TEXTOS_DECIFRAVEIS = [
   '.titulo-cartaz', '.cartaz-sub', '.pilula', 'label', '.rotulo-campo', '.botao', '.botao-mini', '.botao-texto',
-  '.numero-total', '.rotulo', '.titulo-painel',
+  '.numero-total', '.titulo-painel',
   '.cobranca-rotulo', '.cobranca-dias', '.cobranca-info',
   '.linha-nome', '.linha-detalhe', '.linha-valor',
   '.canceladas summary', '.acoes-edicao h3', '.dialogo-titulo', '.dialogo-texto',
@@ -28,16 +29,94 @@ const ATRASO_ENTRE_TEXTOS = 30;
 const ATRASO_MAXIMO = 700;
 
 // Pedaços de texto no meio do efeito, cada um com o texto certo, a hora em
-// que começa e o último texto embaralhado que foi escrito.
+// que começa, o último texto embaralhado que foi escrito e como medir as
+// letras na fonte dele.
 const emEfeito = new Map();
 let lacoRodando = false;
 
-// Troca cada letra por uma sorteada. Algarismo vira algarismo, para o número
-// grande do total não mudar de largura e sair do bloco no meio do efeito.
-// Espaços e pontuação ficam como estão, para a frase manter o formato.
-function embaralhar(texto) {
-  return texto.replace(/[0-9]/g, () => ALGARISMOS[Math.floor(Math.random() * ALGARISMOS.length)])
-    .replace(/[A-Za-zÀ-ÿ]/g, () => LETRAS_SORTEIO[Math.floor(Math.random() * LETRAS_SORTEIO.length)]);
+// Elementos de uma linha só, proibidos de quebrar a linha até o efeito acabar
+// (com a hora em que acaba).
+const linhasTravadas = new Map();
+
+// Tamanho do texto sem pular ---------------------------------------------------------
+//
+// O texto embaralhado não pode mudar de tamanho: um título como "Nova
+// assinatura", que cabe certinho numa linha, quebrava em duas no meio do
+// efeito e o cartaz crescia e encolhia; "Editar assinatura", em duas linhas,
+// chegava a caber numa só. Por isso algarismo vira algarismo, maiúscula vira
+// maiúscula, minúscula vira minúscula, e as letras são sorteadas de modo que a
+// largura somada até cada ponto do texto fique igual à do texto original (se
+// uma letra saiu um pouco mais larga, a próxima tende a sair mais estreita).
+// Assim cada palavra mantém o tamanho e as linhas quebram no mesmo lugar. As
+// larguras são medidas na fonte do próprio texto, uma vez, e guardadas. Os
+// pontinhos de um valor escondido (••••) viram algarismos sorteados à vontade,
+// como um número se embaralhando; nas linhas, o espaço dos pontinhos já tem a
+// largura de quatro algarismos (estilo.css, .valor-escondido), para nada pular.
+
+const medidor = document.createElement('canvas').getContext('2d');
+const medidasPorFonte = new Map();
+const FOLGA = 0.12; // quanto a letra sorteada pode fugir do tamanho que falta
+
+const sortear = (letras) => letras[Math.floor(Math.random() * letras.length)];
+
+function grupoDaLetra(letra) {
+  if (/[0-9]/.test(letra)) return ALGARISMOS;
+  if (/\p{Lu}/u.test(letra)) return LETRAS_SORTEIO;
+  if (/\p{Ll}/u.test(letra)) return LETRAS_SORTEIO_MINUSCULAS;
+  return null; // espaço e pontuação ficam como estão
+}
+
+// Devolve a função que mede a largura de uma letra na fonte do elemento.
+function medidaDaFonte(elemento) {
+  const estilo = getComputedStyle(elemento);
+  const fonte = `${estilo.fontStyle} ${estilo.fontWeight} ${estilo.fontSize} ${estilo.fontFamily}`;
+  if (!medidasPorFonte.has(fonte)) {
+    const larguras = new Map();
+    medidasPorFonte.set(fonte, (letra) => {
+      if (!larguras.has(letra)) {
+        medidor.font = fonte;
+        larguras.set(letra, medidor.measureText(letra).width);
+      }
+      return larguras.get(letra);
+    });
+  }
+  return medidasPorFonte.get(fonte);
+}
+
+function embaralhar(texto, medir) {
+  let diferenca = 0; // quanto o texto sorteado já está mais largo que o original
+  return [...texto].map((letra) => {
+    if (letra === '•') return sortear(ALGARISMOS);
+    const grupo = grupoDaLetra(letra);
+    if (!grupo) return letra;
+    const largura = medir(letra);
+    const tamanhoQueFalta = largura - diferenca;
+    const candidatas = [...grupo];
+    const parecidas = candidatas.filter((outra) => Math.abs(medir(outra) - tamanhoQueFalta) <= Math.max(1, largura * FOLGA));
+    // Nenhuma parecida: fica a de largura mais próxima do que falta.
+    const escolhida = parecidas.length > 0
+      ? sortear(parecidas)
+      : candidatas.reduce((melhor, outra) => (Math.abs(medir(outra) - tamanhoQueFalta) < Math.abs(medir(melhor) - tamanhoQueFalta) ? outra : melhor));
+    diferenca += medir(escolhida) - largura;
+    return escolhida;
+  }).join('');
+}
+
+// O texto do elemento cabe numa linha só? Compara o meio de cada pedaço de
+// texto: na mesma linha, os meios ficam quase na mesma altura (mesmo com o
+// "R$" pequeno ao lado do número); de uma linha para a outra, a distância é
+// de uma linha inteira. Só a borda de cima e de baixo não serve: em títulos
+// com linhas bem juntas, as caixas das letras de duas linhas se encostam.
+function ocupaUmaLinha(elemento) {
+  const faixa = document.createRange();
+  faixa.selectNodeContents(elemento);
+  const caixas = [...faixa.getClientRects()].filter((caixa) => caixa.width > 0 && caixa.height > 0);
+  if (caixas.length === 0) return false;
+  const estilo = getComputedStyle(elemento);
+  const alturaDaLinha = parseFloat(estilo.lineHeight) || parseFloat(estilo.fontSize) * 1.2;
+  const meio = (caixa) => caixa.top + caixa.height / 2;
+  const primeiroMeio = meio(caixas[0]);
+  return caixas.every((caixa) => Math.abs(meio(caixa) - primeiroMeio) < alturaDaLinha * 0.6);
 }
 
 // Os textos aparecem embaralhados e se decifram da esquerda para a direita,
@@ -51,7 +130,9 @@ export function decifrarElemento(elemento) {
   decifrarElementos([elemento]);
 }
 
-function decifrarElementos(elementos) {
+// O mesmo efeito numa lista de elementos, como os valores da tela inicial ao
+// tocar no olho.
+export function decifrarElementos(elementos) {
   if (reduzirMovimento()) return;
   const agora = performance.now();
   let posicao = 0;
@@ -59,17 +140,27 @@ function decifrarElementos(elementos) {
   // Trabalha nos pedaços de texto, e não nos elementos: assim partes como o
   // "/mês" pequeno, os ícones e as quebras de linha continuam no lugar.
   for (const elemento of elementos) {
+    // Texto de uma linha só continua numa linha só durante o efeito.
+    const travarLinha = elemento.getClientRects().length > 0 && ocupaUmaLinha(elemento);
+    let fimDoElemento = 0;
+
     const caminhante = document.createTreeWalker(elemento, NodeFilter.SHOW_TEXT);
     while (caminhante.nextNode()) {
       const no = caminhante.currentNode;
-      if (!no.nodeValue.trim()) continue;
+      if (!no.nodeValue.trim() || !no.parentElement) continue;
 
       // Se o pedaço já estava no meio do efeito, o texto certo é o guardado,
       // e não o embaralhado que está na tela agora.
       const final = emEfeito.get(no)?.final ?? no.nodeValue;
       const inicio = agora + Math.min(posicao * ATRASO_ENTRE_TEXTOS, ATRASO_MAXIMO);
-      emEfeito.set(no, { final, inicio, escrito: undefined });
+      emEfeito.set(no, { final, inicio, escrito: undefined, medir: medidaDaFonte(no.parentElement) });
+      fimDoElemento = Math.max(fimDoElemento, inicio + DURACAO_POR_TEXTO);
       posicao++;
+    }
+
+    if (travarLinha && fimDoElemento > 0) {
+      elemento.style.whiteSpace = 'nowrap';
+      linhasTravadas.set(elemento, Math.max(linhasTravadas.get(elemento) ?? 0, fimDoElemento));
     }
   }
 
@@ -96,8 +187,16 @@ function quadroDoEfeito(agora) {
     }
 
     const reveladas = Math.max(0, Math.floor(avanco * pedaco.final.length));
-    no.nodeValue = pedaco.final.slice(0, reveladas) + embaralhar(pedaco.final.slice(reveladas));
+    no.nodeValue = pedaco.final.slice(0, reveladas) + embaralhar(pedaco.final.slice(reveladas), pedaco.medir);
     pedaco.escrito = no.nodeValue;
+  }
+
+  // Terminado o efeito de um elemento, ele volta a poder quebrar a linha.
+  for (const [elemento, fim] of linhasTravadas) {
+    if (agora >= fim || emEfeito.size === 0) {
+      elemento.style.removeProperty('white-space');
+      linhasTravadas.delete(elemento);
+    }
   }
 
   if (emEfeito.size > 0) {
@@ -163,7 +262,7 @@ function ligarMovimentoDoMouse() {
 // Onda ao clicar ----------------------------------------------------------------
 
 const COM_ONDA = '.botao, .botao-mini, .cartaz, .cobranca, .linha, .opcao-ciclo, .campo-data, '
-  + '.menu-conta-item, .menu-ajustes-item, .linha-area, .acao-conta-cabeca, .opcao-tema, .opcao-segmento';
+  + '.menu-conta-item, .menu-ajustes-item, .linha-area, .acao-conta-cabeca, .opcao-tema, .opcao-segmento, .botao-icone';
 
 // Um círculo cresce a partir do ponto do clique ou do toque, na cor contrária
 // à do elemento: claro sobre o verde, verde sobre o claro.

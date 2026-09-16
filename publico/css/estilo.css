@@ -76,12 +76,13 @@
   --sobre-forte: #ededed;
   --sobre-forte-suave: #afafaf;
 
-  /* Os dois blocos grandes de "Chegando" */
+  /* Os dois blocos grandes de "Chegando". Eles ficam dentro de um painel
+     branco, então o segundo nunca pode ter a cor da superfície. */
   --bloco-1: #2b4239;
   --sobre-bloco-1: #ededed;
   --info-bloco-1: #ffffff;
   --dias-bloco-1: #afafaf;
-  --bloco-2: #ffffff;
+  --bloco-2: #ededed;
   --sobre-bloco-2: #2b4239;
   --dias-bloco-2: #5e6360;
 
@@ -323,6 +324,7 @@ h2[tabindex='-1']:focus {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   padding: 6px 8px 0;
 }
 
@@ -502,12 +504,6 @@ h2[tabindex='-1']:focus {
   font-size: calc(12rem / 16);
   font-weight: 700;
   transition: background-color 0.35s ease, color 0.35s ease;
-}
-
-.rotulo {
-  font-size: calc(12rem / 16);
-  font-weight: 800;
-  padding: 4px 8px 0;
 }
 
 /* Mensagens -------------------------------------------------------------------- */
@@ -1410,17 +1406,6 @@ input::placeholder {
   gap: 6px;
 }
 
-.lista-chegando {
-  background: var(--superficie);
-  border-radius: var(--raio-painel);
-  padding: 8px;
-}
-
-/* Aqui a margem do bloco já é pequena, então a linha não avança sobre ela. */
-.lista-chegando .linha {
-  margin: 0;
-}
-
 .lista-chegando:empty {
   display: none;
 }
@@ -1429,6 +1414,37 @@ input::placeholder {
   font-size: calc(12rem / 16);
   font-weight: 800;
   margin-bottom: 2px;
+}
+
+/* "Chegando" e "Todas" em dois painéis gêmeos: o título à esquerda e o ícone
+   de escolha no canto direito, na mesma altura nos dois. A margem negativa
+   leva o ícone para perto do canto arredondado do painel. */
+.cabecalho-painel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: -8px -8px 4px 0;
+}
+
+.cabecalho-painel .titulo-painel {
+  margin: 0;
+}
+
+.painel-chegando {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco);
+}
+
+/* Blocos dentro do painel: cantos um pouco menores que os do painel. */
+.painel-chegando .cobranca {
+  border-radius: 22px;
+}
+
+.painel-chegando .cabecalho-painel {
+  margin-bottom: -4px;
 }
 
 /* "Ver canceladas": discreto, no fim. */
@@ -1485,6 +1501,39 @@ input::placeholder {
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+/* Fechando (dialogos.js): a mesma animação de abrir, ao contrário. A janela
+   desce e some, e o fundo escurecido clareia junto. */
+.dialogo.fechando {
+  animation: dialogo-desce 0.24s ease-in forwards;
+}
+
+@keyframes dialogo-desce {
+  to {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+.dialogo[open]::backdrop {
+  animation: veu-aparece 0.3s ease-out;
+}
+
+.dialogo.fechando::backdrop {
+  animation: veu-some 0.24s ease-in forwards;
+}
+
+@keyframes veu-aparece {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes veu-some {
+  to {
+    opacity: 0;
   }
 }
 
@@ -1564,10 +1613,114 @@ a.botao {
   color: var(--sobre-forte);
 }
 
-/* Menu suspenso da conta: só no computador (no celular, a gaveta). */
+/* Canto direito do topo: o olho (só na tela inicial) e o botão da conta, com
+   "Olá, Nome". Um nome longo termina em "..." em vez de empurrar o logo. */
 .topo-conta {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
+
+#botao-conta {
+  min-width: 0;
+}
+
+/* Celular estreito: com o nome no botão, o ícone de pessoa sai, para
+   "Olá, Nome" caber ao lado do olho sem encostar no logo. */
+@media (max-width: 420px) {
+  #botao-conta.com-nome .icone {
+    display: none;
+  }
+}
+
+.botao-conta-texto {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Botão redondo só com ícone (olho do topo, dias do "Chegando" e ordem de
+   "Todas"). Fica verde cheio quando está ligado ou com o menu aberto. */
+.botao-icone {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 2px solid var(--destaque);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--destaque);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.com-mouse .botao-icone:hover,
+.botao-icone:active,
+.botao-icone[aria-pressed='true'],
+.botao-icone[aria-expanded='true'] {
+  background: var(--destaque);
+  color: var(--sobre-destaque);
+}
+
+/* O risco do olho se desenha devagar ao esconder os valores e se apaga ao
+   mostrar (o traço tem cerca de 26px de comprimento). */
+.risco-do-olho {
+  stroke-dasharray: 26;
+  stroke-dashoffset: 26;
+  transition: stroke-dashoffset 0.35s ease;
+}
+
+.botao-icone[aria-pressed='true'] .risco-do-olho {
+  stroke-dashoffset: 0;
+}
+
+/* Pontinhos no lugar de um valor escondido. */
+.valor-escondido {
+  letter-spacing: 0.06em;
+}
+
+/* Nas linhas, os pontinhos ocupam a largura de quatro algarismos: ao esconder,
+   eles se embaralham em algarismos (interacoes.js), e o espaço já reservado
+   impede o nome ao lado de mudar de largura no meio do efeito. Em "Todas",
+   ficam encostados no "/mês". */
+.linha-valor .valor-escondido .valor-dinheiro {
+  display: inline-block;
+  /* Quatro algarismos mais o espaçamento entre letras dos pontinhos. */
+  min-width: calc(4ch + 0.5em);
+}
+
+.linha-valor:has(small) .valor-escondido .valor-dinheiro {
+  text-align: right;
+}
+
+/* Deslizar para o lugar (deslizar.js): durante a troca, o painel corta o que
+   passa da borda, e as cópias de quem saiu ficam por baixo dos outros itens.
+   As linhas ganham fundo para uma não aparecer através da outra ao se
+   cruzarem. */
+.deslizando {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.deslizando .linha {
+  background: var(--superficie);
+}
+
+.saindo-do-lugar {
+  position: absolute;
+  z-index: -1;
+  margin: 0;
+  pointer-events: none;
+}
+
+/* Menu suspenso da conta: só no computador (no celular, a gaveta). O menu das
+   escolhas da tela inicial usa o mesmo desenho. */
 
 .menu-conta {
   position: absolute;
@@ -1594,6 +1747,19 @@ a.botao {
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+/* Fechando (dialogos.js): sobe um pouco e some, o contrário de abrir. */
+.menu-conta.fechando {
+  pointer-events: none;
+  animation: menu-sobe 0.16s ease-in forwards;
+}
+
+@keyframes menu-sobe {
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
   }
 }
 
@@ -1633,6 +1799,40 @@ a.botao {
 .menu-conta-item:active {
   background: var(--destaque);
   color: var(--sobre-destaque);
+}
+
+/* Opções das escolhas (menu e gaveta): a que está valendo fica cheia e com o
+   sinal de "certo". */
+.menu-escolha .menu-conta-item[aria-pressed='true'] {
+  background: var(--destaque);
+  color: var(--sobre-destaque);
+}
+
+.menu-escolha .certo,
+.opcoes-gaveta .certo {
+  margin-left: auto;
+}
+
+[aria-pressed='false'] > .certo {
+  visibility: hidden;
+}
+
+.opcoes-gaveta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.opcoes-gaveta .botao-gaveta {
+  display: flex;
+  align-items: center;
+  text-align: left;
+}
+
+.opcoes-gaveta .botao-gaveta[aria-pressed='true'] {
+  background: var(--sobre-forte);
+  color: var(--forte);
 }
 
 .menu-conta-separador {
@@ -2066,14 +2266,19 @@ a.botao {
   .esqueleto-bloco,
   .selo,
   .dialogo[open],
+  .dialogo[open]::backdrop,
+  .dialogo.fechando,
+  .dialogo.fechando::backdrop,
   .menu-conta,
+  .menu-conta.fechando,
   .carteirinha-editor {
     animation: none;
   }
 
   .cantinho,
   .cantinho-lapis,
-  .acao-conta-cabeca .seta {
+  .acao-conta-cabeca .seta,
+  .risco-do-olho {
     transition: none;
   }
 

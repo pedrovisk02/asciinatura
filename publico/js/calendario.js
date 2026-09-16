@@ -10,6 +10,7 @@
 // banco continuam iguais.
 
 import { dataDeHoje } from './calculos.js';
+import { deslizarAbertura } from './deslizar.js';
 
 const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 const DIAS_DA_SEMANA = [['D', 'domingo'], ['S', 'segunda-feira'], ['T', 'terça-feira'], ['Q', 'quarta-feira'], ['Q', 'quinta-feira'], ['S', 'sexta-feira'], ['S', 'sábado']];
@@ -171,16 +172,17 @@ export function criarCalendario({ gatilho, textoDoGatilho, entrada, painel }) {
     diaEmFoco = escolhida && dentroDoLimite(escolhida) ? escolhida : deTexto(dataDeHoje());
     mesVisivel = criarData(diaEmFoco.getFullYear(), diaEmFoco.getMonth(), 1);
     aberto = true;
-    painel.hidden = false;
     gatilho.setAttribute('aria-expanded', 'true');
     desenhar();
+    // Desliza para baixo ao abrir, e os campos de baixo descem junto.
+    deslizarAbertura(painel, true);
     focarDia();
   }
 
   function fechar({ devolverFoco = true } = {}) {
     if (!aberto) return;
     aberto = false;
-    painel.hidden = true;
+    deslizarAbertura(painel, false);
     gatilho.setAttribute('aria-expanded', 'false');
     if (devolverFoco) gatilho.focus();
   }

@@ -6,7 +6,9 @@ import { validarNome, validarTrocaDeSenha } from './validacao.js';
 import { textoMembroDesde } from './calculos.js';
 import { mensagemDeErro } from './erros.js';
 import { reduzirMovimento } from './ascii.js';
-import { prepararDialogo } from './dialogos.js';
+import { prepararDialogo, abrirDialogo, fecharDialogo } from './dialogos.js';
+import { deslizarAbertura } from './deslizar.js';
+import { decifrarElemento } from './interacoes.js';
 
 const computador = window.matchMedia('(min-width: 880px)');
 
@@ -69,17 +71,26 @@ function abrirEdicaoNoCartao() {
   campoNomeCartao.select();
 }
 
+// O nome volta ao cartão surgindo de leve e se decifrando, como os textos das
+// telas, em vez de trocar de uma vez.
+function revelarNome() {
+  if (reduzirMovimento()) return;
+  nomeNaCarteirinha.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 280, easing: 'ease-out' });
+  decifrarElemento(nomeNaCarteirinha);
+}
+
 function fecharEdicaoNoCartao({ devolverFoco }) {
   if (formNomeCartao.hidden) return;
   formNomeCartao.hidden = true;
   nomeNaCarteirinha.hidden = false;
+  revelarNome();
   abrirCantinho({ devolverFoco });
 }
 
 function abrirGavetaDoNome() {
   campoNomeGaveta.value = nomeDoUsuario(usuario);
   erroNomeGaveta.textContent = '';
-  gavetaNome.showModal();
+  abrirDialogo(gavetaNome);
 }
 
 async function salvarNome(texto, elementoDoErro, botao) {
@@ -113,9 +124,15 @@ function mostrarErrosDaSenha(erros) {
   }
 }
 
+function formularioDeSenhaAberto() {
+  return abrirSenha.getAttribute('aria-expanded') === 'true';
+}
+
+// O formulário desliza para baixo ao abrir e recolhe ao fechar, como o
+// calendário do formulário de assinatura.
 function alternarFormularioDeSenha(abrir) {
-  formSenha.hidden = !abrir;
   abrirSenha.setAttribute('aria-expanded', String(abrir));
+  deslizarAbertura(formSenha, abrir);
   if (abrir) {
     avisoSenha.textContent = '';
     formSenha.elements.namedItem('atual').focus();
@@ -129,8 +146,8 @@ function alternarFormularioDeSenha(abrir) {
 // Fecha o que estiver aberto ao sair da página ou da conta.
 export function fecharEdicoesDaConta() {
   fecharEdicaoNoCartao({ devolverFoco: false });
-  if (gavetaNome.open) gavetaNome.close();
-  if (!formSenha.hidden) alternarFormularioDeSenha(false);
+  fecharDialogo(gavetaNome);
+  if (formularioDeSenhaAberto()) alternarFormularioDeSenha(false);
   avisoSenha.textContent = '';
 }
 
@@ -161,14 +178,17 @@ export function prepararMinhaConta({ aoMudarNome, anunciarNaTela }) {
   formNomeGaveta.addEventListener('submit', async (evento) => {
     evento.preventDefault();
     const salvou = await salvarNome(campoNomeGaveta.value, erroNomeGaveta, formNomeGaveta.querySelector('[type="submit"]'));
-    if (salvou) gavetaNome.close();
+    if (!salvou) return;
+    // Primeiro a gaveta desce; depois o nome novo aparece no cartão.
+    await fecharDialogo(gavetaNome);
+    revelarNome();
   });
-  formNomeGaveta.querySelector('[data-cancelar-nome]').addEventListener('click', () => gavetaNome.close());
+  formNomeGaveta.querySelector('[data-cancelar-nome]').addEventListener('click', () => fecharDialogo(gavetaNome));
   // Fechando a gaveta de qualquer jeito (salvar, cancelar, Esc, clique fora),
   // o cantinho volta.
   gavetaNome.addEventListener('close', () => abrirCantinho({ devolverFoco: carteirinha.offsetParent !== null }));
 
-  abrirSenha.addEventListener('click', () => alternarFormularioDeSenha(formSenha.hidden));
+  abrirSenha.addEventListener('click', () => alternarFormularioDeSenha(!formularioDeSenhaAberto()));
 
   formSenha.addEventListener('submit', async (evento) => {
     evento.preventDefault();

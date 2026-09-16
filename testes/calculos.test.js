@@ -264,6 +264,57 @@ describe('resumoDoInicio', () => {
   });
 });
 
+describe('resumoDoInicio com as escolhas da tela inicial', () => {
+  const HOJE = '2026-09-13';
+  const cobranca = (nome, valor, ciclo, data) => ({ nome, valor, ciclo, proxima_cobranca: data, ativa: true });
+
+  const hoje = cobranca('Hoje', 10, 'mensal', '2026-09-13');
+  const dia7 = cobranca('Dia 7', 50, 'mensal', '2026-09-20');
+  const dia8 = cobranca('Dia 8', 20, 'mensal', '2026-09-21');
+  const dia15 = cobranca('Dia 15', 20, 'mensal', '2026-09-28');
+  const dia16 = cobranca('Dia 16', 120, 'anual', '2026-09-29');
+  const lista = [dia16, dia8, hoje, dia15, dia7];
+
+  const nomesChegando = (dias) => resumoDoInicio(lista, HOJE, { diasDoChegando: dias }).chegando.map((a) => a.nome);
+  const nomesTodas = (ordem) => resumoDoInicio(lista, HOJE, { ordem }).ativas.map((a) => a.nome);
+
+  test('7 dias: o dia 7 entra, o dia 8 fica de fora', () => {
+    assert.deepEqual(nomesChegando(7), ['Hoje', 'Dia 7']);
+  });
+
+  test('15 dias: o dia 15 entra, o dia 16 fica de fora', () => {
+    assert.deepEqual(nomesChegando(15), ['Hoje', 'Dia 7', 'Dia 8', 'Dia 15']);
+  });
+
+  test('sem escolha ou com um número que não é opção, vale o padrão de 30 dias', () => {
+    const todas = ['Hoje', 'Dia 7', 'Dia 8', 'Dia 15', 'Dia 16'];
+    assert.deepEqual(resumoDoInicio(lista, HOJE).chegando.map((a) => a.nome), todas);
+    assert.deepEqual(nomesChegando(10), todas);
+    assert.deepEqual(nomesChegando('7'), todas);
+  });
+
+  test('maior valor usa o valor por mês, e o nome desempata', () => {
+    // Dia 16 é anual: 120 por ano dá 10 por mês, empatado com "Hoje".
+    assert.deepEqual(nomesTodas('valor'), ['Dia 7', 'Dia 15', 'Dia 8', 'Dia 16', 'Hoje']);
+  });
+
+  test('próxima cobrança vai da mais perto para a mais longe', () => {
+    assert.deepEqual(nomesTodas('proxima'), ['Hoje', 'Dia 7', 'Dia 8', 'Dia 15', 'Dia 16']);
+  });
+
+  test('nome, sem escolha ou com ordem desconhecida: ordem alfabética', () => {
+    const alfabetica = ['Dia 15', 'Dia 16', 'Dia 7', 'Dia 8', 'Hoje'];
+    assert.deepEqual(nomesTodas('nome'), alfabetica);
+    assert.deepEqual(nomesTodas(undefined), alfabetica);
+    assert.deepEqual(nomesTodas('sorteio'), alfabetica);
+  });
+
+  test('a ordem de "Todas" não muda a ordem de "Chegando"', () => {
+    const resumo = resumoDoInicio(lista, HOJE, { ordem: 'valor' });
+    assert.deepEqual(resumo.chegando.map((a) => a.nome), ['Hoje', 'Dia 7', 'Dia 8', 'Dia 15', 'Dia 16']);
+  });
+});
+
 describe('textoMembroDesde', () => {
   test('mês por extenso e ano', () => {
     // Meio do mês, para o fuso horário de quem roda o teste não mudar o mês.

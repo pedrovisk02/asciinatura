@@ -148,7 +148,17 @@ export function textoMembroDesde(dataIso) {
 // Tela inicial
 
 // Até quantos dias à frente uma cobrança aparece em "Chegando" (hoje incluído).
-export const DIAS_DO_CHEGANDO = 30;
+// A pessoa escolhe entre estas opções na tela inicial.
+export const JANELAS_DO_CHEGANDO = [7, 15, 30];
+export const JANELA_PADRAO_DO_CHEGANDO = 30;
+
+// Ordens da lista "Todas", escolhidas na tela inicial.
+export const ORDENS_DA_LISTA = [
+  { id: 'nome', nome: 'Nome (A a Z)' },
+  { id: 'valor', nome: 'Maior valor' },
+  { id: 'proxima', nome: 'Próxima cobrança' },
+];
+export const ORDEM_PADRAO_DA_LISTA = 'nome';
 
 // Ordem alfabética do jeito que uma pessoa espera: sem separar maiúsculas de
 // minúsculas e com acentos no lugar certo.
@@ -156,10 +166,22 @@ function compararNomes(a, b) {
   return a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' });
 }
 
+// Em empate (mesmo valor ou mesmo dia), o nome desempata, para a lista não
+// trocar de lugar sozinha entre uma carga e outra.
+const COMPARAR_POR_ORDEM = {
+  nome: compararNomes,
+  valor: (a, b) => b.valorMensal - a.valorMensal || compararNomes(a, b),
+  proxima: (a, b) => a.diasAteCobranca - b.diasAteCobranca || compararNomes(a, b),
+};
+
 // Monta tudo o que a tela inicial mostra, a partir das assinaturas como vêm do
 // banco. Assinatura cancelada (ativa = false) fica fora do total e de
 // "Chegando", mas continua na lista de canceladas.
-export function resumoDoInicio(assinaturas, hoje) {
+// "diasDoChegando" e "ordem" vêm das escolhas da pessoa; valores desconhecidos
+// usam o padrão.
+export function resumoDoInicio(assinaturas, hoje, { diasDoChegando = JANELA_PADRAO_DO_CHEGANDO, ordem = ORDEM_PADRAO_DA_LISTA } = {}) {
+  const janela = JANELAS_DO_CHEGANDO.includes(diasDoChegando) ? diasDoChegando : JANELA_PADRAO_DO_CHEGANDO;
+  const comparar = COMPARAR_POR_ORDEM[ordem] ?? compararNomes;
   const ativas = [];
   const comProblema = [];
 
@@ -185,9 +207,9 @@ export function resumoDoInicio(assinaturas, hoje) {
     totalMensal: ativas.reduce((soma, assinatura) => soma + assinatura.valorMensal, 0),
     quantidadeAtivas: ativas.length,
     chegando: ativas
-      .filter((assinatura) => assinatura.diasAteCobranca <= DIAS_DO_CHEGANDO)
-      .sort((a, b) => a.diasAteCobranca - b.diasAteCobranca || compararNomes(a, b)),
-    ativas: ativas.sort(compararNomes),
+      .filter((assinatura) => assinatura.diasAteCobranca <= janela)
+      .sort(COMPARAR_POR_ORDEM.proxima),
+    ativas: ativas.sort(comparar),
     comProblema: comProblema.sort(compararNomes),
     canceladas: assinaturas.filter((assinatura) => !assinatura.ativa).sort(compararNomes),
   };

@@ -5,7 +5,7 @@
 
 import { nomeDoUsuario } from './auth.js';
 import { decifrarTextos } from './interacoes.js';
-import { prepararDialogo } from './dialogos.js';
+import { prepararDialogo, abrirDialogo, fecharDialogo, menuAberto, mostrarMenu, esconderMenu } from './dialogos.js';
 
 const botao = document.querySelector('#botao-conta');
 const menu = document.querySelector('#menu-conta');
@@ -13,7 +13,7 @@ const gaveta = document.querySelector('#dialogo-conta');
 const computador = window.matchMedia('(min-width: 880px)');
 
 function abrirMenu({ peloTeclado }) {
-  menu.hidden = false;
+  mostrarMenu(menu);
   botao.setAttribute('aria-expanded', 'true');
   decifrarTextos(menu);
   // Quem abriu pelo teclado já cai na primeira opção.
@@ -21,15 +21,15 @@ function abrirMenu({ peloTeclado }) {
 }
 
 export function fecharMenuConta({ devolverFoco = false } = {}) {
-  if (menu.hidden) return;
-  menu.hidden = true;
+  if (!menuAberto(menu)) return;
   botao.setAttribute('aria-expanded', 'false');
   if (devolverFoco) botao.focus();
+  esconderMenu(menu);
 }
 
 export function fecharTudoDaConta() {
   fecharMenuConta();
-  if (gaveta.open) gaveta.close();
+  fecharDialogo(gaveta);
 }
 
 export function prepararMenuConta({ aoSair }) {
@@ -38,17 +38,17 @@ export function prepararMenuConta({ aoSair }) {
   botao.addEventListener('click', (evento) => {
     if (computador.matches) {
       // detail 0: o clique veio do teclado (Enter ou Espaço), e não do mouse.
-      if (menu.hidden) abrirMenu({ peloTeclado: evento.detail === 0 });
+      if (!menuAberto(menu)) abrirMenu({ peloTeclado: evento.detail === 0 });
       else fecharMenuConta();
     } else {
-      gaveta.showModal();
+      abrirDialogo(gaveta);
       decifrarTextos(gaveta);
     }
   });
 
   // Clicar fora, Esc ou sair do menu com o Tab fecham o menu.
   document.addEventListener('pointerdown', (evento) => {
-    if (!menu.hidden && !menu.contains(evento.target) && !botao.contains(evento.target)) fecharMenuConta();
+    if (menuAberto(menu) && !menu.contains(evento.target) && !botao.contains(evento.target)) fecharMenuConta();
   });
   menu.addEventListener('keydown', (evento) => {
     if (evento.key === 'Escape') {
@@ -63,14 +63,14 @@ export function prepararMenuConta({ aoSair }) {
 
   // Escolher uma opção fecha o menu ou a gaveta; os links seguem para a página.
   for (const link of menu.querySelectorAll('a')) link.addEventListener('click', () => fecharMenuConta());
-  for (const link of gaveta.querySelectorAll('a')) link.addEventListener('click', () => gaveta.close());
+  for (const link of gaveta.querySelectorAll('a')) link.addEventListener('click', () => fecharDialogo(gaveta));
 
   document.querySelector('#menu-conta-sair').addEventListener('click', () => {
     fecharMenuConta();
     aoSair();
   });
   document.querySelector('#botao-sair').addEventListener('click', () => {
-    gaveta.close();
+    fecharDialogo(gaveta);
     aoSair();
   });
 
@@ -86,5 +86,12 @@ export function atualizarMenuConta(sessao) {
   document.querySelector('#conta-email').textContent = email;
   document.querySelector('#menu-conta-email').textContent = email;
   document.querySelector('#dialogo-conta-titulo').textContent = nome ? `Olá, ${nome}!` : 'Olá!';
+  // A saudação da tela inicial fica no próprio botão. Sem nome, ele continua
+  // "Conta", para ninguém ficar sem saber para que serve. O leitor de tela
+  // ouve a saudação e também que o botão abre a conta.
+  document.querySelector('#botao-conta-texto').textContent = nome ? `Olá, ${nome}` : 'Conta';
+  botao.classList.toggle('com-nome', Boolean(nome));
+  if (nome) botao.setAttribute('aria-label', `Olá, ${nome}. Menu da conta`);
+  else botao.removeAttribute('aria-label');
   if (!sessao) fecharTudoDaConta();
 }

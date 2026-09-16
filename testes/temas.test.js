@@ -173,6 +173,14 @@ describe('paletas', () => {
           .map(({ texto, fundo, minimo, valor }) => `${texto} sobre ${fundo}: ${valor.toFixed(2)} (mínimo ${minimo})`);
         assert.deepEqual(fracos, []);
       });
+
+      // O bloco "Depois" fica dentro do painel branco do "Chegando": com a
+      // mesma cor da superfície, ele sumiria.
+      test(`${nome}: bloco "Depois" se destaca do painel`, () => {
+        const cor = coresDoTema(paleta.id, modo.id);
+        const diferenca = contraste(cor('--bloco-2'), cor('--superficie'));
+        assert.ok(diferenca >= 1.1, `bloco-2 sobre superfície: ${diferenca.toFixed(2)} (mínimo 1,1)`);
+      });
     }
   }
 });

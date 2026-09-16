@@ -10,14 +10,19 @@ import {
   erroNoLinkRecebido,
 } from './auth.js';
 import { listarAssinaturas, criarAssinatura, atualizarAssinatura, apagarAssinatura } from './dados.js';
-import { resumoDoInicio, dataDeHoje, dataParaGravarNaEdicao, valorMensalEquivalente } from './calculos.js';
+import {
+  resumoDoInicio, dataDeHoje, dataParaGravarNaEdicao, valorMensalEquivalente, JANELAS_DO_CHEGANDO, ORDENS_DA_LISTA,
+} from './calculos.js';
+import { lerPreferenciasDoInicio, guardarPreferenciasDoInicio } from './preferencias.js';
+import { ligarEscolha } from './escolha.js';
 import { validarAssinatura, valorParaOCampo, lerValor, validarNome } from './validacao.js';
 import { criarCalendario } from './calendario.js';
 import { mensagemDeErro, ehFalhaDeConexao, MENSAGEM_SEM_CONEXAO } from './erros.js';
 import { fecharAbertura } from './abertura.js';
 import { animarManchas, animarCirculo, reduzirMovimento, zonaDaForma } from './ascii.js';
 import { confirmarApagar } from './confirmacao.js';
-import { decifrarTextos, ligarInteracoes } from './interacoes.js';
+import { decifrarTextos, decifrarElementos, ligarInteracoes } from './interacoes.js';
+import { prepararDeslize } from './deslizar.js';
 import { lerRota, enderecoDaRota, rotaPai, ROTAS_DE_AJUSTES } from './rotas.js';
 import { prepararMenuConta, atualizarMenuConta, fecharTudoDaConta } from './menu-conta.js';
 import { prepararMinhaConta, mostrarConta, fecharEdicoesDaConta } from './minha-conta.js';
@@ -35,6 +40,8 @@ const telas = {
 };
 
 const aviso = document.querySelector('#aviso');
+// O olho do topo só aparece na tela inicial, que é onde os valores ficam.
+const botaoValores = document.querySelector('#botao-valores');
 
 // Verdadeiro enquanto a pessoa, vinda do link de nova senha, ainda não salvou
 // a senha nova. Nesse meio tempo ela já tem sessão, mas não deve ir para o início.
@@ -56,6 +63,7 @@ function mostrarTela(nome, { animar = true } = {}) {
   for (const [chave, tela] of Object.entries(telas)) {
     tela.hidden = chave !== nome;
   }
+  botaoValores.hidden = nome !== 'inicio';
 
   if (nome !== telaAnterior) {
     telaAtual = nome;
@@ -195,6 +203,12 @@ let numeroDaCarga = 0;
 // primeira carga e depois de sair).
 let diaDaTela = null;
 
+// Escolhas da tela inicial (olho, dias do "Chegando" e ordem de "Todas"),
+// guardadas no aparelho, e as assinaturas da última carga: com elas, mudar
+// uma escolha redesenha a tela sem buscar tudo de novo no banco.
+let preferencias = lerPreferenciasDoInicio();
+let assinaturasNaTela = null;
+
 // "2026-10-05" vira "05/10", sem passar pelo Date (ver calculos.js).
 function formatarDiaEMes(texto) {
   const [, mes, dia] = texto.split('-');
@@ -223,21 +237,45 @@ function criar(tag, classe, ...conteudo) {
   return elemento;
 }
 
+// Valores escondidos (o olho do topo): "••••" no lugar do número. O leitor de
+// tela ouve "valor escondido" em vez dos pontinhos. A classe valor-dinheiro
+// marca o que se embaralha ao tocar no olho.
+function valorEscondido() {
+  const pontos = criar('span', 'valor-dinheiro', '••••');
+  pontos.setAttribute('aria-hidden', 'true');
+  return criar('span', 'valor-escondido', criar('span', 'so-leitor', 'valor escondido'), pontos);
+}
+
+// "44,90", ou os pontinhos com os valores escondidos.
+function numeroNaTela(numero) {
+  return preferencias.valoresEscondidos ? valorEscondido() : criar('span', 'valor-dinheiro', formatoNumero.format(numero));
+}
+
+// "R$ 44,90", ou "R$ ••••" com os valores escondidos. O "R$" fica fora do
+// efeito de embaralhar; só o número muda.
+function reaisNaTela(valor) {
+  return criar('span', '', 'R$\u00a0', numeroNaTela(valor));
+}
+
 function criarValor(numero, sufixo = '') {
-  const valor = criar('span', 'linha-valor', formatoNumero.format(numero));
+  const valor = criar('span', 'linha-valor', numeroNaTela(numero));
   if (sufixo) valor.append(criar('small', '', sufixo));
   return valor;
 }
 
 // Uma linha de lista: nome, detalhe embaixo, valor à direita e botões de ação
-// (cada um com um texto e o que fazer ao clicar).
+// (cada um com um texto e o que fazer ao clicar). O detalhe pode ser um texto
+// ou uma lista de pedaços (textos e valores que podem estar escondidos).
 function criarLinha(assinatura, { detalhe = '', valor = null, botoes = [] } = {}) {
   const texto = criar('span', 'linha-texto', criar('span', 'linha-nome', assinatura.nome));
-  if (detalhe) texto.append(criar('span', 'linha-detalhe', detalhe));
+  const pedacosDoDetalhe = [detalhe].flat().filter((pedaco) => pedaco !== '');
+  if (pedacosDoDetalhe.length > 0) texto.append(criar('span', 'linha-detalhe', ...pedacosDoDetalhe));
 
   const linha = criar('li', 'linha', texto);
-  // Para achar a linha depois de salvar e acendê-la (ver destacarLinha).
+  // Para achar a linha depois de salvar e acendê-la (ver destacarLinha) e para
+  // ela deslizar até o novo lugar quando a lista muda (deslizar.js).
   linha.dataset.id = assinatura.id;
+  linha.dataset.chave = `linha-${assinatura.id}`;
   if (valor) linha.append(valor);
 
   if (botoes.length > 0) {
@@ -256,13 +294,13 @@ function criarLinha(assinatura, { detalhe = '', valor = null, botoes = [] } = {}
 }
 
 // Bloco grande de "Chegando", com o número de dias em destaque (como o "04"
-// da referência). A primeira cobrança vem em verde; a segunda, em branco.
+// da referência). Cada paleta escolhe as cores do primeiro e do segundo bloco.
 function criarCobrancaEmDestaque(assinatura, principal) {
   const dias = assinatura.diasAteCobranca;
   const numero = dias === 0 ? 'Hoje' : String(dias).padStart(2, '0');
   const legenda = dias === 0 ? 'Cobrança' : dias === 1 ? 'Dia · amanhã' : 'Dias';
 
-  return criar(
+  const bloco = criar(
     'article',
     `painel cobranca ${principal ? 'cobranca-principal' : 'cobranca-secundaria'}`,
     criar('p', 'cobranca-rotulo', principal ? 'Próxima cobrança' : 'Depois'),
@@ -274,9 +312,11 @@ function criarCobrancaEmDestaque(assinatura, principal) {
       criar('br', ''),
       assinatura.nome,
       criar('br', ''),
-      formatoReais.format(assinatura.valor),
+      reaisNaTela(assinatura.valor),
     ),
   );
+  bloco.dataset.chave = `bloco-${assinatura.id}`;
+  return bloco;
 }
 
 // Largura, em "letras" (em), de cada caractere do total na fonte Montserrat
@@ -305,6 +345,14 @@ function mostrarTotal(valor, contarDe = null) {
   cancelAnimationFrame(contagemDoTotal);
   totalNaTela = valor;
 
+  // Escondido: pontinhos sempre do mesmo tamanho, para o tamanho da letra não
+  // dar pista de quanto é o total.
+  if (preferencias.valoresEscondidos) {
+    numeroTotal.parentElement.style.setProperty('--largura-do-total', larguraEmLetras('000,00'));
+    numeroTotal.replaceChildren(valorEscondido());
+    return;
+  }
+
   // Durante a contagem o texto muda de tamanho: reserva espaço para o maior
   // dos dois, para o número nunca sair do bloco no meio do caminho.
   const textoInicial = contarDe === null ? textoFinal : formatoNumero.format(contarDe);
@@ -328,8 +376,10 @@ function mostrarTotal(valor, contarDe = null) {
 // Entrada da tela inicial: os blocos aparecem em sequência e os textos e
 // números se decifram. Só quando a tela aparece, não a cada clique.
 function tocarEntrada() {
-  if (telas.inicio.hidden || inicioConteudo.hidden) return;
-  animarEntradaDaTela(inicioConteudo);
+  if (telas.inicio.hidden) return;
+  if (!inicioConteudo.hidden) animarEntradaDaTela(inicioConteudo);
+  // Sem nenhuma assinatura, quem entra é o cartaz de boas-vindas.
+  else if (!inicioVazio.hidden) animarEntradaDaTela(telas.inicio);
 }
 
 // Depois de salvar, a própria linha avisa: acende e ganha um selo ("nova",
@@ -363,6 +413,10 @@ function destacarLinha({ id, nome, selo }) {
 }
 
 function mostrarChegando(chegando) {
+  const dias = preferencias.diasDoChegando;
+  document.querySelector('#titulo-chegando').textContent = `Chegando · próximos ${dias} dias`;
+  document.querySelector('#chegando-vazio').textContent = `Nenhuma cobrança nos próximos ${dias} dias.`;
+
   destaqueChegando.hidden = chegando.length === 0;
   destaqueChegando.replaceChildren(
     ...chegando.slice(0, 2).map((assinatura, posicao) => criarCobrancaEmDestaque(assinatura, posicao === 0)),
@@ -373,7 +427,7 @@ function mostrarChegando(chegando) {
       criarLinha(assinatura, {
         detalhe: `${quandoCobra(assinatura.diasAteCobranca)} · ${formatarDiaEMes(assinatura.dataDaCobranca)}`,
         // Com "R$", igual aos blocos grandes logo acima.
-        valor: criar('span', 'linha-valor', formatoReais.format(assinatura.valor)),
+        valor: criar('span', 'linha-valor', reaisNaTela(assinatura.valor)),
       })),
   );
 
@@ -385,6 +439,7 @@ function limparInicio() {
   cancelAnimationFrame(contagemDoTotal);
   totalNaTela = null;
   diaDaTela = null;
+  assinaturasNaTela = null;
   origemDoFormulario = null;
   rolagemDoInicio = 0;
   estadoInicio.textContent = '';
@@ -420,7 +475,8 @@ async function carregarInicio({ destaque = null, contar = false } = {}) {
     diaDaTela = dataDeHoje();
     // A etiqueta do total diz de qual mês é o valor: "Total de setembro".
     document.querySelector('#titulo-total').textContent = `Total de ${MESES[Number(diaDaTela.split('-')[1]) - 1]}`;
-    mostrarResumo(resumoDoInicio(assinaturas, diaDaTela), assinaturas.length, contarDe);
+    assinaturasNaTela = assinaturas;
+    mostrarResumo(resumoDoInicio(assinaturas, diaDaTela, preferencias), assinaturas.length, contarDe);
     if (destaque) destacarLinha(destaque);
   } catch (falha) {
     if (estaCarga !== numeroDaCarga) return;
@@ -483,11 +539,13 @@ function mostrarResumo(resumo, quantidadeTotal, contarDe = null) {
   // mensal à direita, marcado com "/mês", e o valor realmente cobrado embaixo.
   listas.ativas.replaceChildren(
     ...resumo.ativas.map((assinatura) => {
-      const cobrado = assinatura.ciclo === 'mensal'
-        ? ''
-        : `${formatoReais.format(assinatura.valor)} ${PERIODO_DO_CICLO[assinatura.ciclo]}`;
+      const detalhe = [];
+      if (assinatura.ciclo !== 'mensal') detalhe.push(reaisNaTela(assinatura.valor), ` ${PERIODO_DO_CICLO[assinatura.ciclo]}`);
+      if (assinatura.categoria) {
+        detalhe.push(detalhe.length > 0 ? ` · ${assinatura.categoria}` : comPrimeiraMaiuscula(assinatura.categoria));
+      }
       return criarLinha(assinatura, {
-        detalhe: comPrimeiraMaiuscula([cobrado, assinatura.categoria].filter(Boolean).join(' · ')),
+        detalhe,
         valor: criarValor(assinatura.valorMensal, '/mês'),
         botoes: [botaoEditar],
       });
@@ -500,11 +558,95 @@ function mostrarResumo(resumo, quantidadeTotal, contarDe = null) {
   listas.canceladas.replaceChildren(
     ...resumo.canceladas.map((assinatura) =>
       criarLinha(assinatura, {
-        detalhe: `${formatoReais.format(assinatura.valor)} ${PERIODO_DO_CICLO[assinatura.ciclo]}`,
+        detalhe: [reaisNaTela(assinatura.valor), ` ${PERIODO_DO_CICLO[assinatura.ciclo]}`],
         botoes: [botaoReativar, botaoEditar],
       })),
   );
 }
+
+// Escolhas da tela inicial ---------------------------------------------------------
+
+const painelChegando = document.querySelector('.painel-chegando');
+const painelTodas = document.querySelector('#lista-ativas').closest('.painel');
+const tituloChegando = document.querySelector('#titulo-chegando');
+
+// Redesenha a tela inicial com as escolhas novas, sem buscar as assinaturas de
+// novo. "deslizarEm": o painel cujos itens deslizam até o novo lugar.
+function redesenharInicio({ deslizarEm = null } = {}) {
+  if (!assinaturasNaTela || !diaDaTela) return;
+  const tituloAntes = tituloChegando.textContent;
+  const deslizar = deslizarEm ? prepararDeslize(deslizarEm) : null;
+
+  mostrarResumo(resumoDoInicio(assinaturasNaTela, diaDaTela, preferencias), assinaturasNaTela.length);
+
+  deslizar?.();
+  // "próximos 30 dias" virou "próximos 7 dias": o título novo aparece suave.
+  if (tituloChegando.textContent !== tituloAntes && !reduzirMovimento()) {
+    tituloChegando.animate(
+      [{ opacity: 0, transform: 'translateY(-4px)' }, { opacity: 1, transform: 'none' }],
+      { duration: 300, easing: 'ease-out' },
+    );
+  }
+}
+
+function mudarPreferencias(mudanca, frase, opcoesDoRedesenho) {
+  preferencias = { ...preferencias, ...mudanca };
+  guardarPreferenciasDoInicio(preferencias);
+  redesenharInicio(opcoesDoRedesenho);
+  anunciar(frase);
+}
+
+// Os valores em reais da tela inicial, na ordem em que aparecem (o total
+// primeiro), para se embaralharem e se decifrarem ao tocar no olho.
+function valoresDaTelaInicial() {
+  const valores = [...inicioConteudo.querySelectorAll('.valor-dinheiro')];
+  if (!preferencias.valoresEscondidos) valores.unshift(document.querySelector('#total-mensal'));
+  return valores;
+}
+
+// O olho fica "apertado" (verde cheio, olho fechado) com os valores escondidos.
+function atualizarBotaoValores() {
+  const escondidos = preferencias.valoresEscondidos;
+  botaoValores.setAttribute('aria-pressed', String(escondidos));
+  botaoValores.title = escondidos ? 'Mostrar valores' : 'Esconder valores';
+}
+
+atualizarBotaoValores();
+
+// Ao tocar no olho, os valores se embaralham em letras e se decifram já na
+// forma nova (rascunho V1 escolhido pelo Pedro).
+botaoValores.addEventListener('click', () => {
+  const escondidos = !preferencias.valoresEscondidos;
+  mudarPreferencias({ valoresEscondidos: escondidos }, escondidos ? 'Valores escondidos.' : 'Valores à mostra.');
+  atualizarBotaoValores();
+  decifrarElementos(valoresDaTelaInicial());
+});
+
+ligarEscolha({
+  botao: document.querySelector('#botao-dias-chegando'),
+  etiqueta: 'Chegando',
+  titulo: 'Quantos dias mostrar?',
+  opcoes: JANELAS_DO_CHEGANDO.map((dias) => ({ valor: dias, nome: `Próximos ${dias} dias` })),
+  valorAtual: () => preferencias.diasDoChegando,
+  aoEscolher: (dias) => mudarPreferencias(
+    { diasDoChegando: dias },
+    `Chegando mostra os próximos ${dias} dias.`,
+    { deslizarEm: painelChegando },
+  ),
+});
+
+ligarEscolha({
+  botao: document.querySelector('#botao-ordem'),
+  etiqueta: 'Todas',
+  titulo: 'Ordenar por',
+  opcoes: ORDENS_DA_LISTA.map((ordem) => ({ valor: ordem.id, nome: ordem.nome })),
+  valorAtual: () => preferencias.ordem,
+  aoEscolher: (ordem) => mudarPreferencias(
+    { ordem },
+    `Todas em ordem de ${ORDENS_DA_LISTA.find((opcao) => opcao.id === ordem).nome.toLowerCase()}.`,
+    { deslizarEm: painelTodas },
+  ),
+});
 
 // Formulário de assinatura (nova ou edição) --------------------------------------
 
@@ -811,6 +953,8 @@ prepararMinhaConta({
     if (sessaoAtual) {
       sessaoAtual = { ...sessaoAtual, user: usuario };
       atualizarMenuConta(sessaoAtual);
+      // O "Olá, Nome" do topo também se decifra com o nome novo.
+      decifrarElementos([document.querySelector('#botao-conta-texto')]);
     }
   },
   anunciarNaTela: anunciar,
@@ -922,6 +1066,7 @@ async function aplicarRota(nome) {
   }
 
   fecharEdicoesDaConta();
+  const voltandoDeOutraTela = telaAtual !== null && telaAtual !== 'inicio';
   mostrarTela('inicio');
   // Entrou direto numa página de conta e agora foi para o início: a lista
   // ainda não foi carregada.
@@ -930,6 +1075,12 @@ async function aplicarRota(nome) {
     await carregarInicio();
     carregandoPrimeiraVez = false;
     if (focoPerdido()) focar(primeiroTituloVisivel(telas.inicio));
+    tocarEntrada();
+  } else if (voltandoDeOutraTela) {
+    // Voltando com a lista já carregada (do formulário, de Minha conta ou das
+    // configurações): a tela entra como na primeira abertura, com os blocos
+    // aparecendo em sequência e os textos se decifrando, em vez de surgir de
+    // uma vez.
     tocarEntrada();
   }
 }

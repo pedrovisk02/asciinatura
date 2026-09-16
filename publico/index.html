@@ -74,12 +74,18 @@
         </svg>
         <span class="marca-nome"><span class="marca-ascii">Ascii</span>natura</span>
       </h1>
-      <!-- Só aparece com alguém conectado. No celular abre a gaveta da conta
-           (#dialogo-conta); no computador, o menu suspenso logo abaixo. -->
       <div class="topo-conta">
+        <!-- Olho: esconde os valores em reais da tela inicial (só aparece nela). -->
+        <button type="button" id="botao-valores" class="botao-icone" aria-label="Esconder valores" title="Esconder valores" aria-pressed="false" hidden>
+          <!-- Com os valores escondidos, o risco se desenha por cima do olho. -->
+          <svg class="icone icone-olho" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path class="risco-do-olho" d="M3 3l18 18"/></svg>
+        </button>
+        <!-- Só aparece com alguém conectado, com "Olá, Nome" (ou "Conta", sem
+             nome). No celular abre a gaveta da conta (#dialogo-conta); no
+             computador, o menu suspenso logo abaixo. -->
         <button type="button" id="botao-conta" class="botao-mini botao-com-icone" aria-haspopup="true" aria-expanded="false" hidden>
           <svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"/></svg>
-          Conta
+          <span id="botao-conta-texto" class="botao-conta-texto">Conta</span>
         </button>
         <div id="menu-conta" class="menu-conta" hidden>
           <p id="menu-conta-email" class="menu-conta-email"></p>
@@ -239,17 +245,30 @@
           <button type="button" class="botao botao-no-cartaz" data-acao="adicionar">+ Adicionar assinatura</button>
         </div>
 
-        <section class="coluna" aria-labelledby="titulo-chegando">
-          <h2 id="titulo-chegando" class="rotulo">Chegando · próximos 30 dias</h2>
+        <!-- "Chegando" e "Todas" em dois painéis brancos gêmeos, com o título e
+             o ícone de escolha no mesmo lugar (rascunho "S2" do Pedro). -->
+        <section class="painel painel-branco painel-chegando" aria-labelledby="titulo-chegando">
+          <div class="cabecalho-painel">
+            <!-- O app.js troca os dias pelo que a pessoa escolheu -->
+            <h2 id="titulo-chegando" class="titulo-painel">Chegando · próximos 30 dias</h2>
+            <button type="button" id="botao-dias-chegando" class="botao-icone" aria-haspopup="true" aria-expanded="false" aria-label="Quantos dias mostrar em Chegando" title="Quantos dias mostrar">
+              <svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+            </button>
+          </div>
           <!-- As duas próximas cobranças em blocos grandes; as outras em linhas -->
           <div id="destaque-chegando" class="chegando-destaque"></div>
           <ul id="lista-chegando" class="lista lista-chegando"></ul>
-          <p id="chegando-vazio" class="painel painel-branco" hidden>Nenhuma cobrança nos próximos 30 dias.</p>
+          <p id="chegando-vazio" data-chave="vazio" hidden></p>
         </section>
 
         <div class="coluna">
           <section class="painel painel-branco" aria-labelledby="titulo-todas">
-            <h2 id="titulo-todas" class="titulo-painel">Todas</h2>
+            <div class="cabecalho-painel">
+              <h2 id="titulo-todas" class="titulo-painel">Todas</h2>
+              <button type="button" id="botao-ordem" class="botao-icone" aria-haspopup="true" aria-expanded="false" aria-label="Ordenar a lista Todas" title="Ordenar">
+                <svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></svg>
+              </button>
+            </div>
             <ul id="lista-ativas" class="lista"></ul>
             <p id="ativas-vazio" hidden>Nenhuma assinatura ativa.</p>
           </section>
@@ -537,6 +556,18 @@
       <button type="submit" class="botao botao-largo">Salvar</button>
       <button type="button" class="botao-texto" data-cancelar-nome>Cancelar</button>
     </form>
+  </dialog>
+
+  <!-- Escolhas da tela inicial no celular (quantos dias em "Chegando" e ordem
+       de "Todas"): gaveta verde montada pelo escolha.js. No computador, as
+       mesmas opções aparecem num menu suspenso preso ao ícone. -->
+  <dialog id="dialogo-escolha" class="dialogo" aria-labelledby="dialogo-escolha-titulo">
+    <div class="dialogo-conteudo painel-verde">
+      <span id="dialogo-escolha-etiqueta" class="pilula"></span>
+      <h2 id="dialogo-escolha-titulo" class="dialogo-titulo"></h2>
+      <div id="dialogo-escolha-opcoes" class="opcoes-gaveta"></div>
+      <button type="button" class="botao-texto" data-fechar-escolha>Fechar</button>
+    </div>
   </dialog>
 
   <!-- Ordem dos scripts: todos rodam depois que a página é lida, nesta ordem.
